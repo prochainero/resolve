@@ -83,7 +83,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <section id="p-n" class="hide"></section>
 <section id="p-e" class="hide"></section>
 <section id="p-set" class="hide">
- <h2>設定</h2>
+ <h2>設定 <span class="mut">v2026.10.20</span></h2>
  <div id="s-home">
   <div class="card"><h3>套用 API</h3><p class="mut" style="margin:0 0 4px">選一個要使用的 API，前面標示服務商。</p><div id="uselist"></div></div>
   <div class="card"><button class="b" id="gomanage" style="width:100%">管理 API（新增／移除服務商與金鑰）›</button></div>
@@ -123,6 +123,13 @@ const tex=t=>String(t==null?'':t).replace(/\$/g,'');
 const J=(k,d)=>{try{return JSON.parse(ls.get(k,''))||d}catch(e){return d}};
 const sv=(k,v)=>ls.set(k,JSON.stringify(v));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+/* ===== 原圖存在 IndexedDB（容量遠大於 localStorage） ===== */
+let _db=null;
+const idb=()=>_db||(_db=new Promise((res,rej)=>{const r=indexedDB.open('oc_img',1);r.onupgradeneeded=()=>r.result.createObjectStore('i');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+const imgPut=async(id,v)=>{try{const d=await idb();return await new Promise(res=>{const t=d.transaction('i','readwrite');t.objectStore('i').put(v,id);t.oncomplete=()=>res(true);t.onerror=t.onabort=()=>res(false)})}catch(e){return false}};
+const imgGet=async id=>{if(!id)return null;try{const d=await idb();return await new Promise(res=>{const q=d.transaction('i').objectStore('i').get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}};
+const imgDel=async id=>{if(!id)return;try{const d=await idb();d.transaction('i','readwrite').objectStore('i').delete(id)}catch(e){}};
+async function gcAll(){try{const d=await idb();const keep=new Set([...notes().map(n=>n.iid),...chats().flatMap(c=>c.hist.map(h=>h.oid)),...S.hist.map(h=>h.oid)].filter(Boolean));const q=d.transaction('i').objectStore('i').getAllKeys();q.onsuccess=()=>q.result.forEach(k=>{if(!keep.has(k))imgDel(k)})}catch(e){}}
 const notes=()=>J('oc_notes',[]),folds=()=>J('oc_fold',[]),last=()=>J('oc_last',{});
 const clean=a=>[...new Set((a||[]).map(k=>String(k).replace(/^#/,'').trim()).filter(Boolean))];
 const jparse=r=>{r=r.replace(/```json|```/g,'');const a=r.indexOf('{'),b=r.lastIndexOf('}');return JSON.parse(a>=0&&b>a?r.slice(a,b+1):r.trim())};
@@ -222,7 +229,7 @@ async function gen(contents,system,o){
   if(p==='gemini'){
     url='https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':streamGenerateContent?alt=sse';
     headers['x-goog-api-key']=c.key;
-    body={contents,systemInstruction:{parts:[{text:system}]}};
+    body={contents:contents.map(({role,parts})=>({role,parts})),systemInstruction:{parts:[{text:system}]}};
     const gc={},tc={},th=ls.get('oc_think',o.on?'low':'');
     if(o.json)gc.responseMimeType='application/json';
     if(o.on)tc.includeThoughts=true;
@@ -333,7 +340,8 @@ async function pick(f){
   const o=S.mode==='o';
   const url=await shrink(f,1100,.75);S.thumb=await shrink(f,o?520:160,o?.6:.7);
   S.start=S.hist.length;S.pend=null;
-  S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:o?'請整理這張圖裡的優惠。':'請解析這張圖。'}]});
+  const oid=uid();let hasO=false;try{hasO=await imgPut(oid,await shrink(f,2400,.88))}catch(e){}
+  S.hist.push({role:'user',...(hasO?{oid}:{}),parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:o?'請整理這張圖裡的優惠。':'請解析這張圖。'}]});
   render();saveChat();ask();
 }
 ['file','cam'].forEach(id=>$('#'+id).onchange=e=>{pick(e.target.files[0]);e.target.value=''});
@@ -450,6 +458,8 @@ function thumbOf(ix){
   const d=h.parts.find(p=>p.inline_data).inline_data;
   return new Promise(r=>{const i=new Image();i.onload=()=>{const s=Math.min(1,300/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.6))};i.onerror=()=>r(null);i.src='data:'+d.mime_type+';base64,'+d.data});
 }
+function srcOf(ix){const h=ix.map(i=>S.hist[i]).find(h=>h&&h.parts.some(p=>p.inline_data));if(!h)return null;const d=h.parts.find(p=>p.inline_data).inline_data;return{oid:h.oid||null,data:'data:'+d.mime_type+';base64,'+d.data}}
+async function mkImg(s){if(!s)return null;const v=(s.oid&&await imgGet(s.oid))||s.data;const id=uid();return (await imgPut(id,v))?id:null}
 function openMdl(h){$('#mbox').innerHTML=h;$('#mdl').classList.remove('hide')}
 function closeMdl(){$('#mdl').classList.add('hide');$('#mbox').innerHTML='';MD=null}
 function noteDone(fid,n,ok,kd){
@@ -463,7 +473,7 @@ async function saveFlow(ix){
   const body=bodyOf(ix),first=(body.split('\n').find(l=>l.trim())||'').replace(/^(我|AI)：/,'');
   const img=await thumbOf(ix);
   const ms=ix.map(i=>metaOf(S.hist[i])).filter(Boolean),ti=(ms[0]&&ms[0].title)||first.slice(0,30),kw=clean(ms.flatMap(m=>m.kws||[])).join(' ');
-  MD={kind:'save',img};
+  MD={kind:'save',img,src:srcOf(ix)};
   openMdl('<h3>存成筆記</h3><p class="mut" style="margin:0 0 8px">以原文存入，可先修改。</p><input id="mt" placeholder="標題" value="'+esc(ti)+'"><input id="mk" value="'+esc(kw)+'" placeholder="關鍵字（用空格或逗號分隔，可留空）" style="margin-top:8px"><textarea id="mb" rows="8" style="margin-top:8px">'+esc(body)+'</textarea><p style="margin:8px 0 0">存到資料夾：<select id="mf">'+folderOpts('n',last().n)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="msv">儲存</button><button class="b g" id="mcx">取消</button></div>');
 }
 async function aiNote(ix){
@@ -485,20 +495,22 @@ async function aiNote(ix){
     const arr=(Array.isArray(o)?o:o.items)||[];
     if(!arr.length){busy(false,'沒有找到可存的重點。多說說你的想法再試一次。');return}
     S.pend=arr.map(x=>({title:x.title||'（未命名）',body:Array.isArray(x.body)?x.body.join('\n'):(x.body||''),kws:clean(x.kws)}));
-    MD={kind:'ai',img};
+    MD={kind:'ai',img,src:srcOf(ix.length?ix:S.hist.map((_,i)=>i).slice(S.start))};
     busy(false,'');
     openMdl('<h3>AI 製作的筆記（尚未存入）</h3><p class="mut" style="margin:0 0 8px">取消勾選的不會存。</p>'+S.pend.map((x,i)=>'<div class="card" style="margin-top:8px"><div style="display:flex;gap:10px"><input type="checkbox" data-p="'+i+'" checked style="width:22px;flex:none;margin-top:5px"><div><b>'+esc(tex(x.title))+'</b><br>'+kt(x.kws)+'<div style="white-space:pre-wrap">'+esc(tex(x.body))+'</div></div></div></div>').join('')+'<p style="margin:8px 0 0">存到：<select id="mkind" style="width:auto"><option value="e" selected>精華</option><option value="n">筆記本</option></select></p><p style="margin:8px 0 0">資料夾：<select id="mf">'+folderOpts('e',last().e)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="mok">確認存入</button><button class="b g" id="mcx">取消</button></div>');
   }catch(e){busy(false,errH(e))}
 }
 $('#sum').onclick=()=>saveFlow(selIdx());
 $('#aib').onclick=()=>aiNote(selIdx());
-$('#mdl').onclick=e=>{
+$('#mdl').onclick=async e=>{
   const id=e.target.id;
   if(id==='mdl'||id==='mcx'){closeMdl();return}
+  if(id==='zt'){const im=$('#zimg'),big=im.style.width!=='250%';im.style.width=big?'250%':'100%';$('#zt').textContent=big?'縮小':'放大';return}
   if(id==='msv'&&MD){
     const title=$('#mt').value.trim();if(!title){alert('請輸入標題');return}
     const fid=pickFolder('n',$('#mf').value);if(!fid)return;
-    const ok=sv('oc_notes',[{id:uid(),k:'n',fid,title,body:$('#mb').value,kws:clean($('#mk').value.split(/[\s,，、#]+/)),img:MD.img,date:new Date().toLocaleString('zh-TW')},...notes()]);
+    if(MD.busy)return;MD.busy=true;const iid=await mkImg(MD.src);
+    const ok=sv('oc_notes',[{id:uid(),k:'n',fid,title,body:$('#mb').value,kws:clean($('#mk').value.split(/[\s,，、#]+/)),img:MD.img,iid,date:new Date().toLocaleString('zh-TW')},...notes()]);
     noteDone(fid,1,ok,'n');
   }
   else if(id==='mok'&&MD&&S.pend){
@@ -506,8 +518,8 @@ $('#mdl').onclick=e=>{
     if(!keep.length){alert('請至少勾選一則');return}
     const kd=$('#mkind')?$('#mkind').value:'n';
     const fid=pickFolder(kd,$('#mf').value);if(!fid)return;
-    const d=new Date().toLocaleString('zh-TW'),img=MD.img;
-    const ok=sv('oc_notes',[...keep.map(x=>({id:uid(),k:kd,fid,title:x.title,body:x.body,kws:x.kws,img,date:d})),...notes()]);
+    const d=new Date().toLocaleString('zh-TW'),img=MD.img;if(MD.busy)return;MD.busy=true;const iid=await mkImg(MD.src);
+    const ok=sv('oc_notes',[...keep.map(x=>({id:uid(),k:kd,fid,title:x.title,body:x.body,kws:x.kws,img,iid,date:d})),...notes()]);
     noteDone(fid,keep.length,ok,kd);
   }
 };
@@ -529,7 +541,7 @@ function draw(k){
   const fn=id=>(F.find(x=>x.id===id)||{name:'?'}).name;
   const hit=n=>!q||(n.title+' '+n.body+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase().includes(q);
   const fc=f=>'<div class="card hd" data-a="of" data-i="'+f.id+'" style="cursor:pointer"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div>';
-  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px">':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
+  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
   const bar='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
   let h,d;
   if(fid){
@@ -563,6 +575,13 @@ async function aiMerge(k){
     $('#ap'+k).innerHTML='<div class="card"><b>整理結果（尚未存入）</b><h3 style="margin-top:8px">'+esc(tex(rec.title))+'</h3>'+kt(rec.kws)+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(rec.body))+'</div><p>存到精華資料夾：<select>'+folderOpts('e',last().e)+'</select></p>'+(k==='e'?'<p class="mut">存入後會移除被整併的 '+sel.length+' 則。</p>':'')+'<div class="row"><button class="b" data-a="aok">確認存入</button><button class="b g" data-a="ac">取消</button></div></div>';
   }catch(e){$('#ap'+k).innerHTML='<p>'+errH(e)+'</p>'}
 }
+async function zoomImg(nid){
+  const n=notes().find(x=>x.id===nid);if(!n)return;
+  openMdl('<p class="mut">載入原圖…</p>');
+  const full=await imgGet(n.iid),src=full||n.img;
+  if(!src){closeMdl();return}
+  openMdl('<div class="row" style="margin-bottom:8px"><button class="b g sm" id="zt">放大</button><button class="b sm" id="mcx">關閉</button><span class="mut">'+(full?'原圖':'只有縮圖（舊筆記，或原圖不在這台裝置）')+'</span></div><div style="overflow:auto;max-height:72vh;border-radius:8px"><img id="zimg" src="'+src+'" style="display:block;width:100%;max-width:none"></div>');
+}
 async function out(md,name){
   if(!md.trim()){alert('沒有可匯出的內容');return}
   try{await navigator.clipboard.writeText(md);alert('已複製為 Markdown，可貼到筆記軟體。')}
@@ -576,10 +595,11 @@ async function out(md,name){
   else if(a==='tag'){V[k]='';s.value='#'+i;draw(k)}
   else if(a==='nf'){const n=(prompt('資料夾名稱')||'').trim();if(n){sv('oc_fold',[...folds(),{id:uid(),name:n,k}]);draw(k)}}
   else if(a==='rf'){const f=folds().find(x=>x.id===V[k]),n=(prompt('新名稱',f.name)||'').trim();if(n){sv('oc_fold',folds().map(x=>x.id===f.id?{...x,name:n}:x));draw(k)}}
-  else if(a==='df'){const f=folds().find(x=>x.id===V[k]),c=notes().filter(x=>x.fid===f.id).length;if(confirm('刪除資料夾「'+f.name+'」與裡面的 '+c+' 則筆記？無法復原。')){sv('oc_notes',notes().filter(x=>x.fid!==f.id));sv('oc_fold',folds().filter(x=>x.id!==f.id));V[k]='';draw(k)}}
+  else if(a==='df'){const f=folds().find(x=>x.id===V[k]),c=notes().filter(x=>x.fid===f.id).length;if(confirm('刪除資料夾「'+f.name+'」與裡面的 '+c+' 則筆記？無法復原。')){sv('oc_notes',notes().filter(x=>x.fid!==f.id));sv('oc_fold',folds().filter(x=>x.id!==f.id));gcAll();V[k]='';draw(k)}}
+  else if(a==='zoom')zoomImg(i);
   else if(a==='nn')openEd(k,null);
   else if(a==='en')openEd(k,i);
-  else if(a==='dn'){if(confirm('確定刪除這則筆記？')){sv('oc_notes',notes().filter(x=>x.id!==i));draw(k)}}
+  else if(a==='dn'){if(confirm('確定刪除這則筆記？')){sv('oc_notes',notes().filter(x=>x.id!==i));gcAll();draw(k)}}
   else if(a==='sa')document.querySelectorAll('#p-'+k+' [data-c]').forEach(c=>c.checked=true);
   else if(a==='ai')aiMerge(k);
   else if(a==='ac'){AP=null;$('#ap'+k).innerHTML=''}
@@ -597,7 +617,7 @@ async function out(md,name){
     const fid=pickFolder('e',$('#ap'+k+' select').value);if(!fid)return;
     let arr=notes();if(k==='e')arr=arr.filter(x=>!AP.ids.includes(x.id));
     arr.unshift({id:uid(),k:'e',fid,...AP.rec,img:null,date:new Date().toLocaleString('zh-TW'),src:AP.ids});
-    sv('oc_notes',arr);rememberF('e',fid);AP=null;
+    sv('oc_notes',arr);gcAll();rememberF('e',fid);AP=null;
     $('#ap'+k).innerHTML=k==='n'?'<p class="mut">已存入「精華」頁的資料夾。</p>':'';draw(k);
   }
   else if(a==='x'){
@@ -734,6 +754,8 @@ $('#gdown').onclick=async()=>{
 $('#gtok').value=ls.get('oc_gh_tok','');$('#gpw').value=ls.get('oc_gh_pw','');
 migrate();$('#nprov').onchange();fillApis();draw('n');draw('e');autoSync();
 {const L0=chats()[0];if(L0)loadChat(L0.id,true);else drawHist()}
+gcAll();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['learn','n','e','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
