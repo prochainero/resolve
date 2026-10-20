@@ -37,15 +37,21 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <main>
 <section id="p-learn">
  <div class="card">
-  <div class="row" style="margin-bottom:10px"><select id="api" style="flex:1;min-width:0"></select></div>
-  <div class="row" style="margin-bottom:10px">
-   <input id="lmodel" list="mlist" placeholder="模型名稱" style="flex:1;min-width:0" autocomplete="off">
-   <datalist id="mlist"></datalist>
-   <span id="thinkwrap" class="row" style="gap:6px;flex-wrap:nowrap"><span class="mut">思考</span><select id="think" style="width:auto"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></span>
-  </div>
-  <div class="row" style="margin-bottom:10px"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
-  <div class="row">
-   <label class="b">拍照、選圖<input id="file" type="file" accept="image/*" hidden></label>
+  <details id="cfg">
+   <summary>AI 設定：<span id="cfgsum" class="mut"></span></summary>
+   <div style="margin-top:10px">
+    <div class="row" style="margin-bottom:10px"><select id="api" style="flex:1;min-width:0"></select></div>
+    <div class="row" style="margin-bottom:10px">
+     <input id="lmodel" list="mlist" placeholder="模型名稱" style="flex:1;min-width:0" autocomplete="off">
+     <datalist id="mlist"></datalist>
+     <span id="thinkwrap" class="row" style="gap:6px;flex-wrap:nowrap"><span class="mut">思考</span><select id="think" style="width:auto"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></span>
+    </div>
+    <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
+   </div>
+  </details>
+  <div class="row" style="margin-top:12px">
+   <label class="b">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
+   <label class="b">選圖<input id="file" type="file" accept="image/*" hidden></label>
    <button class="b g" id="reset">新聊天</button>
   </div>
   <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。討論完按「存成筆記」，AI 會整理條列重點，你選擇要存到哪個資料夾（會記住上次的選擇）。</p>
@@ -286,8 +292,8 @@ async function pick(f){
   S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:o?'請整理這張圖裡的優惠。':'請解析這張圖。'}]});
   render();ask();
 }
-$('#file').onchange=e=>{pick(e.target.files[0]);e.target.value=''};
-$('#mode').onchange=()=>{S.mode=$('#mode').value};
+['file','cam'].forEach(id=>$('#'+id).onchange=e=>{pick(e.target.files[0]);e.target.value=''});
+$('#mode').onchange=()=>{S.mode=$('#mode').value;cfgSum()};
 $('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;S.start=0;S.pend=null;$('#status').textContent='';render()};
 $('#chat').onclick=async e=>{
   const b=e.target.closest('button');if(!b||b.dataset.cp===undefined)return;
@@ -411,6 +417,7 @@ async function out(md,name){
 });
 
 /* ===== API 套用／管理 ===== */
+function cfgSum(){const c=cur();$('#cfgsum').textContent=(c?label(c)+' / '+(c.model||'未設定'):'尚未設定')+' / '+($('#mode').value==='o'?'優惠整理':'題目討論')}
 function fillApis(){
   const a=apis(),c=cur();
   $('#api').innerHTML=a.length?a.map(x=>'<option value="'+x.id+'">'+esc(label(x))+'</option>').join(''):'<option value="">尚未新增 API（到設定新增）</option>';
@@ -421,6 +428,7 @@ function fillApis(){
   $('#think').value=ls.get('oc_think','low');
   $('#uselist').innerHTML=a.length?a.map(x=>'<label style="display:flex;gap:10px;align-items:center;margin:8px 0"><input type="radio" name="useapi" value="'+x.id+'" style="width:22px;flex:none"'+(c&&c.id===x.id?' checked':'')+'><span><span class="tag" style="color:var(--acc);border-color:var(--acc)">'+esc(P[x.p].n)+'</span><b>'+esc(x.name||'未命名')+'</b><br><span class="mut">金鑰 …'+esc(x.key.slice(-4))+'｜模型 '+esc(x.model||'未設定')+'</span></span></label>').join(''):'<p class="mut">還沒有 API，請按下方「管理 API」新增。</p>';
   $('#managelist').innerHTML=a.length?a.map(x=>'<div class="row" style="justify-content:space-between;margin:8px 0"><span><b>'+esc(P[x.p].n)+'</b>'+(x.name?' · '+esc(x.name):'')+' <span class="mut">…'+esc(x.key.slice(-4))+'</span></span><button class="b g" style="padding:6px 12px" data-rm="'+x.id+'">移除</button></div>').join(''):'<p class="mut">沒有可管理的 API。</p>';
+  cfgSum();
 }
 function setAct(id){ls.set('oc_act',id);fillApis()}
 $('#api').onchange=()=>setAct($('#api').value);
