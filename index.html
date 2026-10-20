@@ -8,9 +8,9 @@
 :root{--bg:#f3f5f2;--fg:#17201c;--card:#fff;--mut:#66716b;--acc:#1f6f5c;--on:#fff;--bd:#d8ded9;--me:#dcebe5;--warn:#a4452c;color-scheme:light dark}
 @media(prefers-color-scheme:dark){:root{--bg:#121714;--fg:#e8eeea;--card:#1c2420;--mut:#93a09a;--acc:#5fc4a6;--on:#0b1410;--bd:#2c3731;--me:#25382f;--warn:#e58a6c}}
 *{box-sizing:border-box}
-body{margin:0;font:16px/1.65 system-ui,"Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--fg);padding-bottom:84px}
+body{margin:0;font:16px/1.65 system-ui,"Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--fg);padding-bottom:calc(var(--nh,56px) + var(--dh,0px) + 20px)}
 main{max-width:720px;margin:0 auto;padding:14px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0)}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:31;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0)}
 nav button{flex:1;padding:14px 0;font-size:15px;background:none;border:0;color:var(--mut);font-weight:600}
 nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:0 0 12px}
@@ -44,6 +44,9 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 #menu{position:absolute;right:0;bottom:calc(100% + 6px);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px;z-index:20;min-width:130px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 #menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--fg);font-size:15px;padding:10px 12px;border-radius:6px;cursor:pointer}
 #menu button:active{background:var(--me)}
+#dock{position:fixed;left:0;right:0;bottom:var(--nh,56px);z-index:30;background:var(--card);border-top:1px solid var(--bd);box-shadow:0 -4px 14px rgba(0,0,0,.12);padding:8px 14px}
+#dock.hide{display:none}
+#dock .dk{max-width:720px;margin:0 auto}
 </style>
 </head>
 <body>
@@ -62,21 +65,12 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
     <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
    </div>
   </details>
-  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。長按訊息框可複選，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、存成筆記、AI製作筆記、重整）。要開新聊天請按輸入區右下角的「⋯」。存入時會讓你選資料夾（會記住上次的選擇）。聊天會自動存在這台裝置，重新整理也不會消失。</p>
+  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。長按訊息框可複選，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、存成筆記、AI製作筆記、重整）。要開新聊天請按下方按鈕列右邊的「⋯」。存入時會讓你選資料夾（會記住上次的選擇）。聊天會自動存在這台裝置，重新整理也不會消失。</p>
   <details id="hist"><summary>聊天紀錄（<span id="hcnt">0</span>）</summary><div id="hlist" style="margin-top:8px"></div></details>
  </div>
  <div id="chat"></div>
  <div class="card">
   <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得地球應該是平的，因為..."></textarea>
-  <div class="row hide" id="selbar" style="margin-top:8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button></div>
-  <div class="row bar" style="margin-top:8px">
-   <label class="b g">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
-   <label class="b g">選圖<input id="file" type="file" accept="image/*" hidden></label>
-   <button class="b g" id="sum">存筆記</button>
-   <button class="b g" id="aib">AI筆記</button>
-   <button class="b" id="send">送出</button>
-   <div class="mw"><button class="b g" id="more" aria-label="更多">⋯</button><div id="menu" class="hide"><button id="reset">＋ 新聊天</button></div></div>
-  </div>
   <div class="mut" id="status" style="margin-top:8px"></div>
  </div>
 </section>
@@ -94,6 +88,8 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <input id="gpw" type="password" placeholder="同步密碼" autocomplete="off" style="margin-top:8px">
    <div class="row" style="margin-top:12px"><button class="b" id="gsave">儲存並同步</button><button class="b g" id="gup">上傳</button><button class="b g" id="gdown">下載</button></div>
    <div class="mut" id="gstat" style="margin-top:8px"></div>
+   <div class="row" style="margin-top:12px"><button class="b g" id="gbk">另存備份檔</button><label class="b g">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
+   <p class="mut" style="margin:8px 0 0">會覆蓋資料前，系統會先請你另存備份檔。備份只含筆記文字、資料夾、API 設定與縮圖，通常不到幾 MB。</p>
   </div>
   <div class="card"><p class="mut" style="margin:0">圖片與對話會送到你目前選用的服務商處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。資料存在這台裝置的瀏覽器，請開啟雲端同步或定期匯出。</p></div>
  </div>
@@ -112,6 +108,17 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 </section>
 </main>
 <div id="mdl" class="hide"><div class="mbox" id="mbox"></div></div>
+<div id="dock"><div class="dk">
+ <div class="row hide" id="selbar" style="margin:0 0 8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button></div>
+ <div class="row bar">
+  <label class="b g">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
+  <label class="b g">選圖<input id="file" type="file" accept="image/*" hidden></label>
+  <button class="b g" id="sum">存筆記</button>
+  <button class="b g" id="aib">AI筆記</button>
+  <button class="b" id="send">送出</button>
+  <div class="mw"><button class="b g" id="more" aria-label="更多">⋯</button><div id="menu" class="hide"><button id="reset">＋ 新聊天</button></div></div>
+ </div>
+</div></div>
 <nav><button data-t="learn" class="on">學習</button><button data-t="n">筆記本</button><button data-t="e">精華</button><button data-t="set">設定</button></nav>
 
 <script>
@@ -730,25 +737,53 @@ function applyRemote(p){
 const hasLocal=()=>apis().length||notes().length;
 const gmsg=(t,e)=>{$('#gstat').innerHTML=e?'<span class="err">'+esc(t)+'</span>':esc(t)};
 const gerr=e=>e&&e.name==='OperationError'?'同步密碼錯誤，或雲端資料已損毀':e.message;
+
+/* ===== 備份檔（覆蓋前另存／手動另存／匯入） ===== */
+function backup(tag,src){
+  const data=Object.assign({},src?src.data:Object.fromEntries(SK.filter(k=>ls.get(k,null)!==null).map(k=>[k,ls.get(k,null)])));
+  if(data.oc_apis&&!confirm('另存「'+tag+'」備份檔。\n要包含 API 金鑰嗎？\n確定＝包含（檔案請妥善保管）\n取消＝不含金鑰'))delete data.oc_apis;
+  const b=new Blob([JSON.stringify({ts:src?src.ts:Date.now(),data})],{type:'application/json'});
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const name='筆記備份-'+tag+'-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.json';
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  gmsg('已另存備份：'+name+'（約 '+Math.max(1,Math.round(b.size/1024))+' KB）');
+}
+$('#gbk').onclick=()=>backup('手動');
+$('#gimp').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const p=JSON.parse(await f.text());if(!p.data)throw 0;
+    if(!confirm('用備份檔覆蓋這台裝置的資料？（會先另存目前的資料）'))return;
+    backup('匯入前-本機');
+    SK.forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k])});
+    localStorage.setItem('oc_mod',String(Date.now()));
+    migrate();fillApis();draw('n');draw('e');gmsg('已匯入備份');
+  }catch(x){gmsg('備份檔格式不正確',1)}
+};
+
 let pt;
-window.schedPush=()=>{if(!gOn())return;clearTimeout(pt);pt=setTimeout(async()=>{try{await push();gmsg('已自動上傳 '+new Date().toLocaleTimeString('zh-TW'))}catch(e){gmsg('自動上傳失敗：'+gerr(e),1)}},4000)};
+window.schedPush=()=>{if(!gOn())return;clearTimeout(pt);pt=setTimeout(async()=>{try{const r=await pull();if(r&&r.ts>+ls.get('oc_sync','0')){gmsg('雲端有較新的資料（可能來自其他裝置），已暫停自動上傳。請到設定按「儲存並同步」處理。',1);return}await push();gmsg('已自動上傳 '+new Date().toLocaleTimeString('zh-TW'))}catch(e){gmsg('自動上傳失敗：'+gerr(e),1)}},4000)};
 async function autoSync(){
   if(!gOn())return;
   try{
     gmsg('同步中…');
     const r=await pull(),s=+ls.get('oc_sync','0'),L=+ls.get('oc_mod','0');
     if(r&&r.ts>s){
-      if((L<=s&&!(s===0&&hasLocal()))||confirm('雲端與這台裝置都有內容。要用雲端版本覆蓋這台嗎？（取消則保留本機並上傳覆蓋雲端）')){applyRemote(r);gmsg('已從雲端更新');return}
+      const dirty=L>s||(s===0&&hasLocal());
+      if(!dirty){applyRemote(r);gmsg('已從雲端更新');return}
+      if(confirm('雲端（可能來自其他裝置）與這台裝置都有改動。要用雲端版本覆蓋這台嗎？\n確定＝先另存本機備份再覆蓋\n取消＝保留本機，先另存雲端備份再上傳覆蓋雲端')){backup('覆蓋前-本機');applyRemote(r);gmsg('已從雲端更新');return}
+      backup('覆蓋前-雲端',r);
     }
     if(!r||L>s||s===0){await push();gmsg('已上傳')}else gmsg('已是最新');
   }catch(e){gmsg('同步失敗：'+gerr(e),1)}
 }
 $('#gsave').onclick=()=>{ls.set('oc_gh_tok',$('#gtok').value.trim());ls.set('oc_gh_pw',$('#gpw').value);if(!gOn()){gmsg('請填入 token 和同步密碼',1);return}autoSync()};
-$('#gup').onclick=async()=>{if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}try{gmsg('上傳中…');await push();gmsg('已上傳')}catch(e){gmsg('上傳失敗：'+gerr(e),1)}};
+$('#gup').onclick=async()=>{if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}try{gmsg('檢查雲端…');const r=await pull(),s=+ls.get('oc_sync','0');if(r&&r.ts>s){if(!confirm('雲端有比這台更新的資料（可能來自其他裝置），上傳會覆蓋它。確定繼續？'))return gmsg('已取消上傳');backup('覆蓋前-雲端',r)}gmsg('上傳中…');await push();gmsg('已上傳')}catch(e){gmsg('上傳失敗：'+gerr(e),1)}};
 $('#gdown').onclick=async()=>{
   if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}
   try{gmsg('下載中…');const r=await pull();if(!r){gmsg('雲端還沒有資料',1);return}
-    if(!confirm('用雲端版本覆蓋這台裝置的資料？'))return;applyRemote(r);gmsg('已從雲端更新')}
+    if(!confirm('用雲端版本覆蓋這台裝置的資料？（會先另存本機備份）'))return;backup('覆蓋前-本機');applyRemote(r);gmsg('已從雲端更新')}
   catch(e){gmsg('下載失敗：'+gerr(e),1)}
 };
 $('#gtok').value=ls.get('oc_gh_tok','');$('#gpw').value=ls.get('oc_gh_pw','');
@@ -756,9 +791,15 @@ migrate();$('#nprov').onchange();fillApis();draw('n');draw('e');autoSync();
 {const L0=chats()[0];if(L0)loadChat(L0.id,true);else drawHist()}
 gcAll();
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+
+/* ===== 底部固定列高度（學習列＋按鈕列），讓內容不被擋住 ===== */
+const lay=()=>{const r=document.documentElement.style;r.setProperty('--nh',$('nav').offsetHeight+'px');r.setProperty('--dh',$('#dock').offsetHeight+'px')};
+if(window.ResizeObserver){const ro=new ResizeObserver(lay);ro.observe($('nav'));ro.observe($('#dock'))}
+window.addEventListener('resize',lay);lay();
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['learn','n','e','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
+  $('#dock').classList.toggle('hide',b.dataset.t!=='learn');lay();
   if(b.dataset.t==='n'||b.dataset.t==='e')draw(b.dataset.t);
   if(b.dataset.t==='set')goHome();
 });
