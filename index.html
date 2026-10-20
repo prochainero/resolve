@@ -238,7 +238,7 @@ async function gen(contents,system,o){
       if(r.status===503||r.status===529||/overload|high demand|unavailable/i.test(msg))throw new Error('這個模型現在使用人數太多，請稍等幾分鐘重試或換一個模型。\n原始訊息：'+msg);
       throw new Error(msg+(p==='gemini'&&/think/i.test(msg)?'\n（可能與思考設定有關，請把思考改成「預設」）':''));
     }
-    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='',serr='';
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='',serr='',why='';
     try{
       for(;;){
         const {done,value}=await rd.read();if(done)break;
@@ -250,13 +250,15 @@ async function gen(contents,system,o){
           try{
             const j=JSON.parse(s);
             if(j.type==='error'||(j.error&&!j.candidates&&!j.choices)){serr=(j.error&&j.error.message)||'串流發生錯誤';continue}
+            const fr=(j.candidates&&j.candidates[0]&&j.candidates[0].finishReason)||(j.choices&&j.choices[0]&&j.choices[0].finish_reason)||(j.delta&&j.delta.stop_reason)||'';
+            if(j.promptFeedback&&j.promptFeedback.blockReason)why='提示被擋：'+j.promptFeedback.blockReason;else if(fr&&fr!=='STOP'&&fr!=='stop')why='結束原因：'+fr;
             const [a,t]=ex(j);full+=a;thought+=t;
             if(o.on)o.on(full,thought);
           }catch(e){}
         }
       }
     }catch(e){if(ctl.signal.aborted)throw new Error(ctl.signal.reason==='stall'?'回應中斷':'已取消');throw e}
-    if(!full)throw new Error(serr||'模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
+    if(!full)throw new Error((serr||'模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖')+(why?'\n原因：'+why:''));
     return full;
   }finally{clearTimeout(wd)}
 }
