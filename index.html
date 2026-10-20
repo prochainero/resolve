@@ -68,8 +68,8 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
   <p><b>API 金鑰</b><br><span class="mut">到 Google AI Studio 的「Get API key」免費建立，貼在這裡。金鑰只存在這個瀏覽器。</span></p>
   <input id="key" type="password" placeholder="AIza…" autocomplete="off">
   <p><b>模型</b><br><span class="mut">可直接輸入模型名稱。額度用完（429）時換一個再試。</span></p>
-  <input id="model" list="ml" placeholder="gemini-2.5-flash">
-  <datalist id="ml"><option value="gemini-2.5-flash"><option value="gemini-2.5-flash-lite"><option value="gemini-2.5-pro"></datalist>
+  <input id="model" list="ml" placeholder="gemini-3-flash-preview">
+  <datalist id="ml"><option value="gemini-3-flash-preview"><option value="gemini-flash-latest"><option value="gemini-pro-latest"><option value="gemini-3-pro-preview"><option value="gemini-2.5-flash"><option value="gemini-2.5-flash-lite"></datalist>
   <div class="row" style="margin-top:12px"><button class="b" id="save">儲存設定</button><span id="saved" class="mut"></span></div>
  </div>
  <div class="card"><p class="mut" style="margin:0">圖片會送到 Google 處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。爭點資料只存在這台裝置的瀏覽器，清除瀏覽資料會消失，請定期匯出。</p></div>
@@ -94,12 +94,13 @@ const SUM=`請回顧以上整段對話，找出學生「理解有落差、想錯
 async function call(contents,system,json){
   const k=ls.get('oc_key','');
   if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
-  const m=ls.get('oc_model','')||'gemini-2.5-flash';
+  const m=ls.get('oc_model','')||'gemini-3-flash-preview';
   const body={contents,systemInstruction:{parts:[{text:system}]}};
   if(json)body.generationConfig={responseMimeType:'application/json'};
   let r;
   try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
   catch(e){throw new Error('連線失敗，請檢查網路')}
+  if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型名稱（例如 gemini-flash-latest）。');
   if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error((d.error&&d.error.message)||('錯誤 '+r.status));
