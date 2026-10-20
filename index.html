@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>有機化學爭點本</title>
+<title>學習筆記本</title>
 <style>
 :root{--bg:#f3f5f2;--fg:#17201c;--card:#fff;--mut:#66716b;--acc:#1f6f5c;--on:#fff;--bd:#d8ded9;--me:#dcebe5;--warn:#a4452c;color-scheme:light dark}
 @media(prefers-color-scheme:dark){:root{--bg:#121714;--fg:#e8eeea;--card:#1c2420;--mut:#93a09a;--acc:#5fc4a6;--on:#0b1410;--bd:#2c3731;--me:#25382f;--warn:#e58a6c}}
@@ -11,328 +11,530 @@
 body{margin:0;font:16px/1.65 system-ui,"Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--fg);padding-bottom:84px}
 main{max-width:720px;margin:0 auto;padding:14px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0)}
-nav button{flex:1;padding:14px 0;font-size:16px;background:none;border:0;color:var(--mut);font-weight:600}
+nav button{flex:1;padding:14px 0;font-size:15px;background:none;border:0;color:var(--mut);font-weight:600}
 nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:0 0 12px}
 button.b,label.b{display:inline-block;background:var(--acc);color:var(--on);border:0;border-radius:8px;padding:13px 18px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
 button.g{background:none;color:var(--acc);border:1px solid var(--acc)}
+button.b.sm{padding:6px 12px;font-size:14px}
 button:disabled{opacity:.5}
 input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
 .msg{white-space:pre-wrap;padding:11px 13px;border-radius:10px;margin:0 0 10px;max-width:94%;background:var(--card);border:1px solid var(--bd)}
 .msg.me{background:var(--me);margin-left:auto;border-color:transparent}
 .err{color:var(--warn);font-weight:600}
 .mut{color:var(--mut);font-size:14px}
-img.pv{max-width:100%;max-height:260px;border-radius:8px;display:block;margin-bottom:10px}
-img.th{width:64px;height:64px;object-fit:cover;border-radius:6px}
+img.pv{max-width:100%;max-height:300px;border-radius:8px;display:block;margin-bottom:10px}
 h2{font-size:19px;margin:6px 0 12px}h3{font-size:17px;margin:0 0 6px}
 .tag{display:inline-block;font-size:13px;padding:1px 9px;border:1px solid var(--bd);border-radius:99px;margin:0 6px 4px 0;color:var(--mut)}
 details summary{cursor:pointer;color:var(--acc);font-weight:600}
 .hide{display:none}
-ul{padding-left:18px;margin:6px 0}li{margin:5px 0}
 .act{display:flex;gap:6px;margin-top:8px}.act button{font-size:13px;padding:3px 11px;border:1px solid var(--bd);background:none;color:var(--mut);border-radius:6px}
-nav button{font-size:15px}
 </style>
 </head>
 <body>
 <main>
 <section id="p-learn">
  <div class="card">
+  <div class="row" style="margin-bottom:10px"><select id="api" style="flex:1;min-width:0"></select></div>
+  <div class="row" style="margin-bottom:10px">
+   <input id="lmodel" list="mlist" placeholder="模型名稱" style="flex:1;min-width:0" autocomplete="off">
+   <datalist id="mlist"></datalist>
+   <span id="thinkwrap" class="row" style="gap:6px;flex-wrap:nowrap"><span class="mut">思考</span><select id="think" style="width:auto"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></span>
+  </div>
+  <div class="row" style="margin-bottom:10px"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
   <div class="row">
    <label class="b">拍照、選圖<input id="file" type="file" accept="image/*" hidden></label>
    <button class="b g" id="reset">新聊天</button>
   </div>
-  <p class="mut" id="hint">可連續問很多題：每拍一張就是新的一題，AI 記得前面的討論。頁面卡頓時再按「新聊天」。</p>
+  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。討論完按「存成筆記」，AI 會整理條列重點，你選擇要存到哪個資料夾（會記住上次的選擇）。</p>
  </div>
  <div id="chat"></div>
- <div id="composer" class="card">
+ <div class="card">
   <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得這裡應該是 SN1，因為…"></textarea>
-  <div class="row" style="margin-top:8px">
-   <button class="b" id="send">送出</button>
-   <button class="b g" id="sum">整理爭點並存檔</button>
-   <button class="b g" id="syn">綜整爭點</button>
-  </div>
+  <div class="row" style="margin-top:8px"><button class="b" id="send">送出</button><button class="b g" id="sum">存成筆記</button></div>
   <div class="mut" id="status" style="margin-top:8px"></div>
  </div>
 </section>
-
-<section id="p-book" class="hide">
- <h2>爭點本（大資料庫）</h2>
- <div class="row" style="margin-bottom:12px">
-  <input id="find" placeholder="搜尋標題、標籤、內容" style="flex:1">
-  <button class="b g" id="exp">匯出</button>
- </div>
- <div id="list"></div>
-</section>
-
-<section id="p-ess" class="hide">
- <h2>精華（AI 目錄）</h2>
- <div class="card"><b>考題 → 考點</b><div id="qmap" class="mut"></div></div>
- <div class="row" style="margin-bottom:8px">
-  <input id="efind" placeholder="搜尋考點、關鍵字" style="flex:1">
-  <button class="b g" id="emerge">整併勾選</button>
-  <button class="b g" id="eexp">匯出</button>
- </div>
- <p class="mut" id="estat"></p>
- <div id="elist"></div>
-</section>
-
+<section id="p-n" class="hide"></section>
+<section id="p-e" class="hide"></section>
 <section id="p-set" class="hide">
  <h2>設定</h2>
- <div class="card">
-  <p><b>API 金鑰</b><br><span class="mut">到 Google AI Studio 的「Get API key」免費建立，貼在這裡。金鑰只存在這個瀏覽器。</span></p>
-  <input id="key" type="password" placeholder="AIza…" autocomplete="off">
-  <p><b>模型</b><br><span class="mut">標示 Paid 的模型需要付費帳號。免費帳號請先試沒有 Paid 標示的；額度用完（429）時換一個。</span></p>
-  <select id="msel">
-   <option value="gemini-3.8-flash">Gemini 3.8 Flash（新）</option>
-   <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite（快、省額度）</option>
-   <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
-   <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
-   <option value="gemini-3.6-flash">Gemini 3.6 Flash（Paid）</option>
-   <option value="gemini-3-flash-preview">Gemini 3 Flash Preview（Paid）</option>
-   <option value="gemini-4-argon">Gemini 4 Argon（Paid，最強）</option>
-   <option value="">其他（自行輸入名稱）</option>
-  </select>
-  <input id="model" class="hide" placeholder="輸入模型名稱，例如 gemini-flash-latest" style="margin-top:8px">
-  <p><b>思考程度</b><br><span class="mut">越高越準但越慢、越耗額度。結構式和反應機構建議用中或高。若模型不支援會顯示錯誤，改回「預設」即可。</span></p>
-  <select id="think"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select>
-  <div class="row" style="margin-top:12px"><button class="b" id="save">儲存設定</button><span id="saved" class="mut"></span></div>
+ <div id="s-home">
+  <div class="card"><h3>套用 API</h3><p class="mut" style="margin:0 0 4px">選一個要使用的 API，前面標示服務商。</p><div id="uselist"></div></div>
+  <div class="card"><button class="b" id="gomanage" style="width:100%">管理 API（新增／移除服務商與金鑰）›</button></div>
+  <h2>雲端同步（GitHub Gist）</h2>
+  <div class="card">
+   <p class="mut" style="margin-top:0">用 prochainero 登入 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token，只勾「gist」，並設定到期日。同步密碼自訂（建議 12 字以上），用來在瀏覽器內加密；筆記與 API 金鑰上傳前都會加密，GitHub 只看得到亂碼。忘記密碼就無法解開。每台裝置各輸入一次 token 和密碼即可。</p>
+   <input id="gtok" type="password" placeholder="GitHub token（ghp_…）" autocomplete="off">
+   <input id="gpw" type="password" placeholder="同步密碼" autocomplete="off" style="margin-top:8px">
+   <div class="row" style="margin-top:12px"><button class="b" id="gsave">儲存並同步</button><button class="b g" id="gup">上傳</button><button class="b g" id="gdown">下載</button></div>
+   <div class="mut" id="gstat" style="margin-top:8px"></div>
+  </div>
+  <div class="card"><p class="mut" style="margin:0">圖片與對話會送到你目前選用的服務商處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。資料存在這台裝置的瀏覽器，請開啟雲端同步或定期匯出。</p></div>
  </div>
- <div class="card"><p class="mut" style="margin:0">圖片會送到 Google 處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。爭點資料只存在這台裝置的瀏覽器，清除瀏覽資料會消失，請定期匯出。</p></div>
+ <div id="s-manage" class="hide">
+  <button class="b g" id="mback" style="margin-bottom:12px">‹ 返回設定</button>
+  <div class="card"><h3>已新增的 API（可移除）</h3><div id="managelist"></div></div>
+  <div class="card"><h3>新增 API</h3>
+   <p class="mut">Gemini：aistudio.google.com 的「Get API key」。Claude：console.anthropic.com。OpenAI：platform.openai.com。金鑰只存在這個瀏覽器（開啟雲端同步後會加密備份）。模型在「學習」頁選。</p>
+   <select id="nprov"></select>
+   <input id="nkey" type="password" autocomplete="off" style="margin-top:8px">
+   <div id="nbasewrap" class="hide" style="margin-top:8px"><input id="nbase" placeholder="API 網址，例如 https://api.deepseek.com/v1" autocomplete="off"></div>
+   <input id="nname" placeholder="備註名稱（選填，例如：我的、家人的）" style="margin-top:8px" autocomplete="off">
+   <div class="row" style="margin-top:12px"><button class="b" id="nadd">新增</button><span id="nmsg" class="mut"></span></div>
+  </div>
+ </div>
 </section>
 </main>
-<nav><button data-t="learn" class="on">學習</button><button data-t="book">爭點本</button><button data-t="ess">精華</button><button data-t="set">設定</button></nav>
+<nav><button data-t="learn" class="on">學習</button><button data-t="n">筆記本</button><button data-t="e">精華</button><button data-t="set">設定</button></nav>
 
 <script>
 const $=s=>document.querySelector(s);
-const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think'];
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let S={hist:[],thumb:null,busy:false,qStart:0,qid:null,qno:null,pend:null};
-
-const SYS=`你是有機化學家教，對象是正在自學的學生。一律使用繁體中文，用白話、生活化的比喻解釋，專有名詞第一次出現時附英文。禁止使用 LaTeX 或美元符號 $；化學式與符號用一般文字和 Unicode，例如 SN2、H₂O、CH₃⁺、→、⇌、δ+。
-收到圖片時，第一步先列出「我看到的內容」：結構、官能基、箭頭與電子流向、試劑與條件；看不清楚的地方明說「不確定」，不要猜。第二步才解釋。
-討論時，注意學生的想法哪裡正確、哪裡有落差。不要直接給完整答案，先指出關鍵線索並提問，讓學生自己推。`;
-const sumP=v=>`請回顧以上「這一題」的對話，找出學生「理解有落差、想錯、或反覆卡住」的爭點（最多 6 個，沒有就回傳空陣列）。
-只輸出 JSON 物件：{"q":"這題的一句話摘要","issues":[{"title":"爭點標題","mine":"學生原本的想法","correct":"正確理解（白話）","kps":["考點關鍵字"],"quiz":"一道可自我檢驗的練習題"}]}
-kps 是 1 到 3 個「考點關鍵字」，2 到 8 個字、以名詞為主（例如 SN2 反應、立體化學）。已有的關鍵字請優先沿用，同義的不要另創：${v||'（目前沒有）'}。
-全部使用繁體中文，不要用 LaTeX。`;
-const SYS2='你是有機化學筆記整理助手。使用繁體中文，不要用 LaTeX 或 $ 符號。';
-const ess=()=>{try{return JSON.parse(ls.get('oc_ess','[]'))}catch(e){return[]}};
+const tex=t=>String(t==null?'':t).replace(/\$/g,'');
+const J=(k,d)=>{try{return JSON.parse(ls.get(k,''))||d}catch(e){return d}};
+const sv=(k,v)=>ls.set(k,JSON.stringify(v));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const notes=()=>J('oc_notes',[]),folds=()=>J('oc_fold',[]),last=()=>J('oc_last',{});
 const clean=a=>[...new Set((a||[]).map(k=>String(k).replace(/^#/,'').trim()).filter(Boolean))];
-const jparse=r=>JSON.parse(r.replace(/```json|```/g,'').trim());
+const jparse=r=>{r=r.replace(/```json|```/g,'');const a=r.indexOf('{'),b=r.lastIndexOf('}');return JSON.parse(a>=0&&b>a?r.slice(a,b+1):r.trim())};
+const errH=e=>'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>';
+const kt=a=>(a||[]).map(w=>'<span class="tag" data-a="tag" data-i="'+esc(w)+'" style="cursor:pointer">#'+esc(tex(w))+'</span>').join('');
+let S={hist:[],thumb:null,busy:false,start:0,pend:null,mode:'q'},V={n:'',e:''},ED=null,AP=null;
+
+/* ===== 舊資料搬移 ===== */
+function migrate(){
+  if(ls.get('oc_notes',null)!==null)return;
+  const b=J('oc_book',[]),e=J('oc_ess',[]);if(!b.length&&!e.length)return;
+  const fn={id:uid(),name:'有機化學',k:'n'},fe={id:uid(),name:'有機化學',k:'e'};
+  sv('oc_fold',[fn,fe]);
+  sv('oc_notes',[
+    ...e.map(x=>({id:x.id,k:'e',fid:fe.id,title:x.name,body:x.summary||'',kws:x.kws||[],img:null,date:x.date||''})),
+    ...b.map(x=>({id:x.id,k:'n',fid:fn.id,title:x.title,body:'我原本的想法：'+(x.mine||'')+'\n正確理解：'+(x.correct||'')+'\n練習題：'+(x.quiz||''),kws:x.kps||x.tags||[],img:x.thumb||null,date:x.date||''}))
+  ]);
+  sv('oc_last',{n:fn.id,e:fe.id});
+}
+
+/* ===== 服務商 ===== */
+const P={
+ gemini:{n:'Gemini',d:'gemini-3.8-flash',k:'AIza…',m:['gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-3.1-pro-preview','gemini-3.6-flash','gemini-3-flash-preview','gemini-4-argon','gemini-flash-latest']},
+ claude:{n:'Claude',d:'claude-sonnet-5-5',k:'sk-ant-…',m:['claude-sonnet-5-5','claude-haiku-5-5','claude-opus-5-5']},
+ openai:{n:'OpenAI',d:'',k:'sk-…',m:[]},
+ compat:{n:'其他（OpenAI 相容）',d:'',k:'API key',m:[]}
+};
+const apis=()=>J('oc_apis',[]);
+const saveApis=a=>sv('oc_apis',a);
+const cur=()=>{const a=apis();return a.find(x=>x.id===ls.get('oc_act',''))||a[0]||null};
+const label=x=>P[x.p].n+(x.name?' · '+x.name:' · …'+x.key.slice(-4));
+const provName=()=>{const c=cur();return c?P[c.p].n:''};
+const txt=m=>m.parts.filter(p=>p.text).map(p=>p.text).join('');
+function toOA(c,sys){
+  const a=[{role:'system',content:sys}];
+  c.forEach(m=>{
+    const t=txt(m);
+    if(m.role==='model'){if(t)a.push({role:'assistant',content:t});return}
+    const parts=m.parts.filter(p=>p.inline_data).map(p=>({type:'image_url',image_url:{url:'data:'+p.inline_data.mime_type+';base64,'+p.inline_data.data}}));
+    if(t)parts.push({type:'text',text:t});
+    if(parts.length)a.push({role:'user',content:parts});
+  });
+  return a;
+}
+function toCl(c){
+  return c.map(m=>{
+    const parts=[];
+    m.parts.forEach(p=>{
+      if(p.inline_data)parts.push({type:'image',source:{type:'base64',media_type:p.inline_data.mime_type,data:p.inline_data.data}});
+      else if(p.text)parts.push({type:'text',text:p.text});
+    });
+    return parts.length?{role:m.role==='model'?'assistant':'user',content:parts}:null;
+  }).filter(Boolean);
+}
+const SYS=`你是自學者的家教，科目不限（例如有機化學、英文），依學生拍的題目判斷科目。一律使用繁體中文，用白話、生活化的比喻解釋，專有名詞第一次出現時附英文。禁止使用 LaTeX 或美元符號 $；化學式與符號用一般文字和 Unicode，例如 SN2、H₂O、CH₃⁺、→、⇌、δ+。
+收到圖片時，第一步先列出「我看到的內容」：文字、結構、符號、箭頭、條件；看不清楚的地方明說「不確定」，不要猜。第二步才解釋。
+討論時，注意學生的想法哪裡正確、哪裡有落差。不要直接給完整答案，先指出關鍵線索並提問，讓學生自己推。`;
+const SYSO=`你是優惠整理助手，一律使用繁體中文，不要使用 LaTeX 或 $。收到圖片（優惠券、QR code、活動海報、截圖）時，先列出「我看到的內容」：店家或品牌、優惠內容、使用期限、使用條件與限制、使用方式；看不清楚或無法確定的地方明說「不確定」，不要猜。QR code 本身你無法掃描，只能讀旁邊的文字。`;
+const SYS2='你是筆記整理助手。使用繁體中文，不要用 LaTeX 或 $ 符號。';
+const sumP=(m,v)=>(m==='o'
+ ?'請把以上對話與圖片中的每一則優惠整理成筆記（今天是'+new Date().toLocaleDateString('zh-TW')+'）。只輸出 JSON：{"items":[{"title":"店家＋優惠（一行）","body":"店家：…\\n優惠：…\\n期限：…\\n條件：…\\n使用方式：…","kws":["關鍵字"]}]}\n'
+ :'請回顧以上「這一題」的對話，找出學生理解有落差、想錯、或反覆卡住的重點（最多 6 個，沒有就回傳空陣列）。只輸出 JSON：{"items":[{"title":"重點標題","body":"我原本的想法：…\\n正確理解：…\\n練習題：…","kws":["關鍵字"]}]}\n')
+ +'kws 是 1 到 3 個關鍵字，2 到 8 個字、以名詞為主'+(m==='o'?'（例如 餐飲、交通、信用卡、咖啡）':'（例如 SN2 反應、現在完成式）')+'。已有的關鍵字請優先沿用，同義的不要另創：'+(v||'（目前沒有）')+'。全部繁體中文，不要用 LaTeX。';
 function ctx(h){let n=0;return h.slice().reverse().map(m=>{if(m.parts.some(p=>p.inline_data)){n++;if(n>2)return{role:m.role,parts:m.parts.filter(p=>!p.inline_data).concat([{text:'（較早的圖片已省略）'}])}}return m}).reverse()}
 
-async function call(contents,system,json){
-  const k=ls.get('oc_key','');
-  if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
-  const m=ls.get('oc_model','')||'gemini-3.8-flash';
-  const body={contents,systemInstruction:{parts:[{text:system}]}};
-  const gc={};if(json)gc.responseMimeType='application/json';const th=ls.get('oc_think','');if(th)gc.thinkingConfig={thinkingLevel:th};if(Object.keys(gc).length)body.generationConfig=gc;
-  let r;
-  try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
-  catch(e){throw new Error('連線失敗，請檢查網路')}
-  if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型名稱（例如 gemini-flash-latest）。');
-  if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+(/think/i.test((d.error&&d.error.message)||'')?'（看起來與思考設定有關，請到設定改回「預設」）':''));
-  const p=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts;
-  if(!p)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
-  return p.map(x=>x.text||'').join('');
-}
-function shrink(file,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height));const c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=URL.createObjectURL(file)})}
-
-const SUB={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋'},SUP={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻'};
-function tex(t){
-  t=String(t==null?'':t).replace(/\$\$?([^$]+?)\$\$?/g,(m,x)=>x
-    .replace(/\\(?:text|mathrm|mathbf|textbf|mathit|ce)\{([^}]*)\}/g,'$1')
-    .replace(/\\(?:rightarrow|to)(?![a-zA-Z])/g,'→').replace(/\\leftarrow(?![a-zA-Z])/g,'←').replace(/\\leftrightarrow(?![a-zA-Z])/g,'↔')
-    .replace(/\\(?:rightleftharpoons|leftrightharpoons)(?![a-zA-Z])/g,'⇌')
-    .replace(/\\delta(?![a-zA-Z])/g,'δ').replace(/\\Delta(?![a-zA-Z])/g,'Δ').replace(/\\alpha(?![a-zA-Z])/g,'α').replace(/\\beta(?![a-zA-Z])/g,'β').replace(/\\pi(?![a-zA-Z])/g,'π').replace(/\\sigma(?![a-zA-Z])/g,'σ')
-    .replace(/\\pm(?![a-zA-Z])/g,'±').replace(/\\cdot(?![a-zA-Z])/g,'·').replace(/\\neq(?![a-zA-Z])/g,'≠')
-    .replace(/_\{([^}]*)\}/g,(m,a)=>[...a].map(c=>SUB[c]||c).join('')).replace(/_([0-9+\-])/g,(m,a)=>SUB[a]).replace(/_([A-Za-z])/g,'$1')
-    .replace(/\^\{([^}]*)\}/g,(m,a)=>[...a].map(c=>SUP[c]||c).join('')).replace(/\^([0-9+\-])/g,(m,a)=>SUP[a])
-    .replace(/\\[,;: ]/g,' ').replace(/[{}]/g,'').replace(/\\/g,''));
-  return t.replace(/\$/g,'');
-}
-function render(){
-  $('#chat').innerHTML=S.hist.map((h,i)=>{
-    const t=h.parts.filter(p=>p.text).map(p=>p.text).join('');
-    const img=h.parts.find(p=>p.inline_data);
-    const ab='<div class="act"><button data-cp="'+i+'">複製</button><button data-qt="'+i+'">引用</button></div>';
-    if(h.role==='user')return '<div class="msg me">'+(img?'<img class="pv" src="data:image/jpeg;base64,'+img.inline_data.data+'">':'')+esc(t)+ab+'</div>';
-    return '<div class="msg">'+esc(tex(t))+(t?ab:'')+'</div>';
-  }).join('');
-  window.scrollTo(0,document.body.scrollHeight);
-}
-function busy(b,msg){S.busy=b;['send','sum','syn'].forEach(i=>$('#'+i).disabled=b);$('#status').innerHTML=msg||''}
-async function stream(contents,system,on){
-  const k=ls.get('oc_key','');
-  if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
-  const m=ls.get('oc_model','')||'gemini-3.8-flash';
-  const body={contents,systemInstruction:{parts:[{text:system}]}};
-  const th=ls.get('oc_think','low');
-  body.generationConfig={thinkingConfig:Object.assign({includeThoughts:true},th?{thinkingLevel:th}:{})};
+/* ===== 呼叫模型（串流） ===== */
+async function gen(contents,system,o){
+  o=o||{};
+  const A=cur();
+  if(!A)throw new Error('請先到「設定」新增 API');
+  const p=A.p,c=A,m=A.model||P[p].d;
+  if(!c.key)throw new Error('請先到「設定」輸入 '+P[p].n+' 的 API 金鑰');
+  if(!m)throw new Error('請先在「學習」頁填入模型名稱');
+  let url,body,headers={'Content-Type':'application/json'};
+  if(p==='gemini'){
+    url='https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':streamGenerateContent?alt=sse';
+    headers['x-goog-api-key']=c.key;
+    body={contents,systemInstruction:{parts:[{text:system}]}};
+    const gc={},tc={},th=ls.get('oc_think',o.on?'low':'');
+    if(o.json)gc.responseMimeType='application/json';
+    if(o.on)tc.includeThoughts=true;
+    if(th)tc.thinkingLevel=th;
+    if(Object.keys(tc).length)gc.thinkingConfig=tc;
+    if(Object.keys(gc).length)body.generationConfig=gc;
+  }else if(p==='claude'){
+    url='https://api.anthropic.com/v1/messages';
+    headers['x-api-key']=c.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';
+    body={model:m,max_tokens:4096,stream:true,system,messages:toCl(contents)};
+  }else{
+    const b=(p==='compat'?c.base:'https://api.openai.com/v1').trim().replace(/\/+$/,'');
+    if(!b)throw new Error('請先到「設定」填入 API 網址');
+    url=b+'/chat/completions';
+    headers.Authorization='Bearer '+c.key;
+    body={model:m,stream:true,messages:toOA(contents,system)};
+    if(o.json)body.response_format={type:'json_object'};
+  }
+  const ex=j=>{
+    if(p==='gemini'){
+      const ps=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts;
+      let a='',t='';(ps||[]).forEach(x=>{if(x.thought)t+=x.text||'';else a+=x.text||''});return[a,t];
+    }
+    if(p==='claude')return[j.type==='content_block_delta'&&j.delta&&j.delta.text?j.delta.text:'',''];
+    const d=j.choices&&j.choices[0]&&j.choices[0].delta;
+    return[(d&&d.content)||'',(d&&(d.reasoning_content||d.reasoning))||''];
+  };
   const ctl=new AbortController();S.ctl=ctl;
   let got=false;const wd=setTimeout(()=>{if(!got)ctl.abort('stall')},90000);
   try{
     let r;
-    try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':streamGenerateContent?alt=sse',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
-    catch(e){throw new Error(ctl.signal.reason==='stall'?'超過 90 秒沒有回應。請到設定把思考程度改成「低」，或換成 Flash Lite 模型。':ctl.signal.aborted?'已取消':'連線失敗，請檢查網路')}
+    try{r=await fetch(url,{method:'POST',signal:ctl.signal,headers,body:JSON.stringify(body)})}
+    catch(e){throw new Error(ctl.signal.reason==='stall'?'超過 90 秒沒有回應。請換成較快的模型（Gemini 也可把思考改成「低」）。':ctl.signal.aborted?'已取消':'連線失敗，請檢查網路、API 網址，或該服務是否允許瀏覽器直接連線')}
     if(!r.ok){
       const d=await r.json().catch(()=>({}));
-      if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型。');
-      if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
-      const msg=(d.error&&d.error.message)||('錯誤 '+r.status);
-      if(r.status===503||/overload|high demand|unavailable/i.test(msg))throw new Error('這個模型現在使用人數太多（伺服器忙碌），不是你的設定問題。請稍等幾分鐘重試，或到設定換一個模型（例如 Flash Lite）。\n原始訊息：'+msg);
-      throw new Error(msg+(/think/i.test(msg)?'\n（看起來與思考設定有關，請到設定把思考程度改成「預設」）':''));
+      const msg=(d.error&&d.error.message)||(Array.isArray(d)&&d[0]&&d[0].error&&d[0].error.message)||('錯誤 '+r.status);
+      if(r.status===401||r.status===403)throw new Error(P[p].n+' 拒絕了這個金鑰（'+r.status+'）。請檢查金鑰、權限或餘額。\n原始訊息：'+msg);
+      if(r.status===404)throw new Error('找不到這個模型或網址，請檢查模型名稱。\n原始訊息：'+msg);
+      if(r.status===429)throw new Error('額度用完或請求太頻繁（429）。請稍後再試，或換一個模型。');
+      if(r.status===503||r.status===529||/overload|high demand|unavailable/i.test(msg))throw new Error('這個模型現在使用人數太多，請稍等幾分鐘重試或換一個模型。\n原始訊息：'+msg);
+      throw new Error(msg+(p==='gemini'&&/think/i.test(msg)?'\n（可能與思考設定有關，請把思考改成「預設」）':''));
     }
-    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='';
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='',serr='';
     try{
-    for(;;){
-      const {done,value}=await rd.read();if(done)break;
-      got=true;
-      buf+=dec.decode(value,{stream:true});
-      const lines=buf.split('\n');buf=lines.pop();
-      for(const ln of lines){
-        if(!ln.startsWith('data:'))continue;
-        try{const j=JSON.parse(ln.slice(5));const ps=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts;
-          if(ps){ps.forEach(x=>{if(x.thought)thought+=x.text||'';else full+=x.text||''});on(full,thought)}}catch(e){}
+      for(;;){
+        const {done,value}=await rd.read();if(done)break;
+        got=true;buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+        for(const ln of lines){
+          if(!ln.startsWith('data:'))continue;
+          const s=ln.slice(5).trim();if(!s||s==='[DONE]')continue;
+          try{
+            const j=JSON.parse(s);
+            if(j.type==='error'||(j.error&&!j.candidates&&!j.choices)){serr=(j.error&&j.error.message)||'串流發生錯誤';continue}
+            const [a,t]=ex(j);full+=a;thought+=t;
+            if(o.on)o.on(full,thought);
+          }catch(e){}
+        }
       }
-    }
     }catch(e){if(ctl.signal.aborted)throw new Error(ctl.signal.reason==='stall'?'回應中斷':'已取消');throw e}
-    if(!full)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
+    if(!full)throw new Error(serr||'模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
     return full;
   }finally{clearTimeout(wd)}
 }
+const call=(contents,system,json)=>gen(contents,system,{json:!!json});
+function shrink(file,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height));const c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=URL.createObjectURL(file)})}
+
+/* ===== 資料夾工具 ===== */
+function folderOpts(k,sel){
+  const f=folds().filter(x=>x.k===k);
+  return f.map(x=>'<option value="'+x.id+'"'+(x.id===sel?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'<option value="__new"'+(f.length?'':' selected')+'>＋新增資料夾…</option>';
+}
+function pickFolder(k,v){
+  if(v!=='__new')return v;
+  const n=(prompt('資料夾名稱（例如：有機化學、英文、優惠）')||'').trim();if(!n)return '';
+  const f={id:uid(),name:n,k};sv('oc_fold',[...folds(),f]);return f.id;
+}
+const rememberF=(k,id)=>{const L=last();L[k]=id;sv('oc_last',L)};
+
+/* ===== 學習頁 ===== */
+function render(){
+  $('#chat').innerHTML=S.hist.map((h,i)=>{
+    const t=txt(h),img=h.parts.find(p=>p.inline_data);
+    const ab=t?'<div class="act"><button data-cp="'+i+'">複製</button></div>':'';
+    if(h.role==='user')return '<div class="msg me">'+(img?'<img class="pv" src="data:image/jpeg;base64,'+img.inline_data.data+'">':'')+esc(t)+ab+'</div>';
+    return '<div class="msg">'+esc(tex(t))+ab+'</div>';
+  }).join('');
+  window.scrollTo(0,document.body.scrollHeight);
+}
+function busy(b,msg){S.busy=b;['send','sum'].forEach(i=>$('#'+i).disabled=b);$('#status').innerHTML=msg||''}
 async function ask(){
   const t0=Date.now();let th='';
-  const tick=()=>{const sec=Math.round((Date.now()-t0)/1000);const sn=th?'<br><span class="mut">'+esc(th.slice(-100).replace(/\s+/g,' '))+'</span>':'';$('#status').innerHTML='AI 運作中… 已等待 '+sec+' 秒'+sn};
+  const tick=()=>{const sec=Math.round((Date.now()-t0)/1000);$('#status').innerHTML=esc(provName())+' 運作中… 已等待 '+sec+' 秒'+(th?'<br><span class="mut">'+esc(th.slice(-100).replace(/\s+/g,' '))+'</span>':'')};
   busy(true,'');tick();const iv=setInterval(tick,1000);
   S.hist.push({role:'model',parts:[{text:''}]});const idx=S.hist.length-1;
   try{
-    await stream(S.hist.slice(0,idx),SYS,(t,h)=>{S.hist[idx].parts[0].text=t;th=h;render()});
+    await gen(S.hist.slice(0,idx),S.mode==='o'?SYSO:SYS,{on:(t,h)=>{S.hist[idx].parts[0].text=t;th=h;render()}});
     clearInterval(iv);busy(false,'');
-  }catch(e){clearInterval(iv);S.hist.pop();busy(false,'<span class="err">'+esc(e.message)+'</span>')}
+  }catch(e){clearInterval(iv);S.hist.pop();busy(false,errH(e))}
   render();
 }
 async function pick(f){
   if(!f||S.busy)return;
-  const url=await shrink(f,1500,.85);S.thumb=await shrink(f,160,.7);
-  S.qStart=S.hist.length;S.qid=Date.now()+'';S.qno=null;S.pend=null;
-  S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:'請解析這張圖。'}]});
+  const o=S.mode==='o';
+  const url=await shrink(f,1500,.85);S.thumb=await shrink(f,o?520:160,o?.6:.7);
+  S.start=S.hist.length;S.pend=null;
+  S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:o?'請整理這張圖裡的優惠。':'請解析這張圖。'}]});
   render();ask();
 }
 $('#file').onchange=e=>{pick(e.target.files[0]);e.target.value=''};
-$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;S.qStart=0;S.qid=null;S.qno=null;S.pend=null;$('#status').textContent='';render()};
+$('#mode').onchange=()=>{S.mode=$('#mode').value};
+$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;S.start=0;S.pend=null;$('#status').textContent='';render()};
 $('#chat').onclick=async e=>{
-  const b=e.target.closest('button');if(!b)return;
-  const d=b.dataset,i=d.cp!==undefined?d.cp:d.qt;if(i===undefined)return;
-  const t=tex(S.hist[i].parts.filter(p=>p.text).map(p=>p.text).join(''));
-  if(d.cp!==undefined){try{await navigator.clipboard.writeText(t);b.textContent='已複製'}catch(x){b.textContent='複製失敗'}setTimeout(()=>{b.textContent='複製'},1500)}
-  else{const q=$('#q');q.value=(q.value?q.value+'\n':'')+t.split('\n').map(l=>'> '+l).join('\n')+'\n\n';q.focus()}
+  const b=e.target.closest('button');if(!b||b.dataset.cp===undefined)return;
+  try{await navigator.clipboard.writeText(tex(txt(S.hist[b.dataset.cp])));b.textContent='已複製'}catch(x){b.textContent='複製失敗'}
+  setTimeout(()=>{b.textContent='複製'},1500);
 };
 $('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();ask()};
 $('#sum').onclick=async()=>{
-  if(S.busy||S.hist.length-S.qStart<2)return;
-  busy(true,'整理爭點中…');
-  try{
-    const book=bookList();
-    const vocab=clean([...book.flatMap(x=>x.kps||x.tags||[]),...ess().flatMap(e=>[e.name,...(e.kws||[])])]).slice(0,150).join('、');
-    const o=jparse(await call([...ctx(S.hist.slice(S.qStart)),{role:'user',parts:[{text:sumP(vocab)}]}],SYS,true));
-    const arr=Array.isArray(o)?o:(o.issues||[]);
-    if(!arr.length){busy(false,'這次對話沒有找到明顯的爭點。多說說你的想法再試一次。');return}
-    if(!S.qid)S.qid=Date.now()+'';
-    if(S.qno==null){S.qno=+ls.get('oc_qn','0')+1;ls.set('oc_qn',String(S.qno))}
-    const d=new Date().toLocaleString('zh-TW');
-    const items=arr.map((x,i)=>({id:S.qid+'-'+i,qid:S.qid,qno:S.qno,qsum:o.q||'',date:d,thumb:S.thumb,title:x.title||'（未命名）',mine:x.mine||'',correct:x.correct||'',kps:clean(x.kps||x.tags),quiz:x.quiz||''}));
-    const ok=ls.set('oc_book',JSON.stringify([...items,...book.filter(x=>x.qid!==S.qid)]));
-    busy(false,ok?'已存入考題 '+S.qno+' 的 '+items.length+' 個爭點。接著可按「綜整爭點」，連結過去筆記。':'<span class="err">儲存失敗（瀏覽器空間不足），請先匯出再刪除舊紀錄。</span>');
-  }catch(e){busy(false,'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>')}
-};
-$('#syn').onclick=async()=>{
   if(S.busy)return;
-  const book=bookList(),cur=book.filter(x=>x.qid===S.qid);
-  if(!S.qid||!cur.length){$('#status').textContent='請先按「整理爭點並存檔」。';return}
-  busy(true,'比對過去筆記中…');
+  if(S.hist.length-S.start<2){$('#status').textContent='先跟 AI 討論或拍一張圖，再存成筆記。';return}
+  busy(true,'整理重點中…');
   try{
-    const kw=cur.flatMap(x=>x.kps||[]);
-    const hit=e=>[e.name,...(e.kws||[])].some(k=>kw.some(w=>k.includes(w)||w.includes(k)));
-    const E=ess().slice(0,120).map(e=>({id:e.id,name:e.name,kws:e.kws,qs:e.qs,summary:hit(e)?e.summary:(e.summary||'').slice(0,80)}));
-    const old=book.filter(x=>x.qid!==S.qid).slice(0,80).map(x=>({qno:x.qno,title:x.title,kps:x.kps}));
-    const pr='以下是「考題'+S.qno+'」的新爭點：'+JSON.stringify(cur.map(x=>({title:x.title,kps:x.kps,correct:x.correct})))
-     +'\n既有的精華考點：'+JSON.stringify(E)+'\n過去的爭點（供查找關聯）：'+JSON.stringify(old)
-     +'\n請整理這題涉及的每個考點，避免重複：若與既有精華考點相同或相近，就併入（mergeId 填該 id），summary 要寫成「合併既有內容後的完整新版」；否則 mergeId 為 null 並新建。related 用一句話說明這個考點與過去哪些考題或考點有關，沒有就留空。'
-     +'\n只輸出 JSON：{"links":[{"name":"考點名稱","kws":["關鍵字"],"mergeId":null,"related":"","summary":"精華整理（白話、含易錯點，150 字內）"}]}';
-    const o=jparse(await call([{role:'user',parts:[{text:pr}]}],SYS2,true));
-    const links=o.links||[];
-    if(!links.length){busy(false,'沒有可綜整的考點。');return}
-    S.pend={qno:S.qno,ids:cur.map(x=>x.id),links};
-    busy(false,'<b>綜整結果（尚未存入）</b>'+links.map(l=>'<div class="card" style="margin-top:8px"><b>'+esc(tex(l.name))+'</b> <span class="tag">'+(l.mergeId&&ess().some(x=>x.id===l.mergeId)?'併入既有':'新考點')+'</span><br>'+esc(tex(l.related||'與過去筆記暫無明顯關聯'))+'</div>').join('')+'<p><button class="b" id="ok">確認存入精華</button></p>');
-  }catch(e){busy(false,'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>')}
+    const vocab=clean(notes().flatMap(x=>x.kws||[])).slice(0,150).join('、');
+    const o=jparse(await call([...ctx(S.hist.slice(S.start)),{role:'user',parts:[{text:sumP(S.mode,vocab)}]}],S.mode==='o'?SYSO:SYS,true));
+    const arr=(Array.isArray(o)?o:o.items)||[];
+    if(!arr.length){busy(false,'沒有找到可存的重點。多說說你的想法再試一次。');return}
+    S.pend=arr.map(x=>({title:x.title||'（未命名）',body:Array.isArray(x.body)?x.body.join('\n'):(x.body||''),kws:clean(x.kws)}));
+    busy(false,'<b>預覽（尚未存入，取消勾選的不會存）</b>'+S.pend.map((x,i)=>'<div class="card" style="margin-top:8px"><div style="display:flex;gap:10px"><input type="checkbox" data-p="'+i+'" checked style="width:22px;flex:none;margin-top:5px"><div><b>'+esc(tex(x.title))+'</b><br>'+kt(x.kws)+'<div style="white-space:pre-wrap">'+esc(tex(x.body))+'</div></div></div></div>').join('')+'<p>存到資料夾：<select id="pf">'+folderOpts('n',last().n)+'</select></p><p><button class="b" id="ok">確認存入</button></p>');
+  }catch(e){busy(false,errH(e))}
 };
 $('#status').onclick=e=>{
   if(e.target.id!=='ok'||!S.pend)return;
-  const P=S.pend,now=new Date().toLocaleString('zh-TW');let E=ess();
-  P.links.forEach(l=>{
-    const kws=clean(l.kws),e2=l.mergeId&&E.find(x=>x.id===l.mergeId);
-    if(e2){e2.summary=l.summary||e2.summary;e2.kws=clean([...(e2.kws||[]),...kws]);e2.qs=[...new Set([...(e2.qs||[]),P.qno])];e2.ids=[...new Set([...(e2.ids||[]),...P.ids])];e2.date=now}
-    else E.unshift({id:'e'+Date.now()+Math.random().toString(36).slice(2,6),name:l.name,kws,summary:l.summary||'',qs:[P.qno],ids:P.ids,date:now});
-  });
-  const ok=ls.set('oc_ess',JSON.stringify(E));S.pend=null;
-  busy(false,ok?'已存入精華（共 '+E.length+' 個考點），可到「精華」頁查看。':'<span class="err">儲存失敗，請先匯出再刪除舊紀錄。</span>');
+  const fid=pickFolder('n',$('#pf').value);if(!fid)return;
+  const keep=[...document.querySelectorAll('#status [data-p]')].filter(c=>c.checked).map(c=>S.pend[+c.dataset.p]);
+  if(!keep.length)return;
+  const d=new Date().toLocaleString('zh-TW');
+  const ok=sv('oc_notes',[...keep.map(x=>({id:uid(),k:'n',fid,title:x.title,body:x.body,kws:x.kws,img:S.thumb,date:d})),...notes()]);
+  rememberF('n',fid);S.pend=null;
+  busy(false,ok?'已存入「'+esc((folds().find(f=>f.id===fid)||{}).name)+'」共 '+keep.length+' 則。':'<span class="err">儲存失敗（瀏覽器空間不足），請先刪除舊筆記或匯出。</span>');
 };
 
-function bookList(){try{return JSON.parse(ls.get('oc_book','[]'))}catch(e){return[]}}
-const kt=a=>(a||[]).map(k=>'<span class="tag">#'+esc(tex(k))+'</span>').join('');
-function drawBook(){
-  const f=$('#find').value.trim().replace(/^#/,'').toLowerCase();
-  const b=bookList().filter(x=>!f||(JSON.stringify(Object.assign({},x,{thumb:0}))+'考題'+x.qno).toLowerCase().includes(f));
-  const g={};b.forEach(x=>{const k=x.qid||x.id;(g[k]=g[k]||[]).push(x)});
-  $('#list').innerHTML=b.length?Object.values(g).map(a=>{const x=a[0];
-    return '<div class="card"><h3>'+(x.qno?'考題 '+x.qno:'舊紀錄')+' <span class="mut" style="font-weight:400">'+esc(x.date)+'</span></h3>'+(x.qsum?'<div class="mut">'+esc(tex(x.qsum))+'</div>':'')
-    +'<ul>'+a.map(i=>'<li><details><summary>'+esc(tex(i.title))+' '+kt(i.kps||i.tags)+'</summary><p><b>我原本的想法</b><br>'+esc(tex(i.mine))+'</p><p><b>正確理解</b><br>'+esc(tex(i.correct))+'</p><p><b>練習題</b><br>'+esc(tex(i.quiz))+'</p><button class="b g" data-del="'+i.id+'">刪除</button></details></li>').join('')+'</ul></div>'}).join('')
-    :'<p class="mut">沒有符合的爭點。到「學習」頁拍一題，討論後按「整理爭點並存檔」。</p>';
+/* ===== 筆記本／精華（共用） ===== */
+const TT={n:'筆記本',e:'精華'};
+['n','e'].forEach(k=>{
+  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="x">匯出</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
+  $('#s'+k).oninput=()=>draw(k);
+});
+function draw(k){
+  const q=$('#s'+k).value.trim().replace(/^#/,'').toLowerCase();
+  let fid=V[k];
+  const F=folds().filter(x=>x.k===k),N=notes().filter(x=>x.k===k),cf=F.find(x=>x.id===fid);
+  if(fid&&!cf)fid=V[k]='';
+  const fn=id=>(F.find(x=>x.id===id)||{name:'?'}).name;
+  const hit=n=>!q||(n.title+' '+n.body+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase().includes(q);
+  const fc=f=>'<div class="card hd" data-a="of" data-i="'+f.id+'" style="cursor:pointer"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div>';
+  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px">':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
+  const bar='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
+  let h,d;
+  if(fid){
+    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button><span><button class="b g sm" data-a="rf">改名</button> <button class="b g sm" data-a="df">刪除</button></span></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button>'+bar+'</div>';
+    d=list(N.filter(n=>n.fid===fid&&hit(n)));
+  }else if(!q){
+    h='<div class="hd"><span class="mut">資料夾（科目）</span><button class="b g sm" data-a="nf">＋新資料夾</button></div>';
+    d=F.length?F.map(fc).join(''):'<p class="mut">還沒有資料夾。按「＋新資料夾」建立科目，例如：有機化學、英文、優惠。也可以在「學習」頁存筆記時直接新增。</p>';
+  }else{
+    h='<div class="hd"><span class="mut">搜尋結果（所有資料夾）</span><span>'+bar+'</span></div>';
+    d=F.filter(f=>f.name.toLowerCase().includes(q)).map(fc).join('')+list(N.filter(hit),true);
+  }
+  $('#h'+k).innerHTML=h;$('#d'+k).innerHTML=d;
 }
-$('#find').oninput=drawBook;
-$('#list').onclick=e=>{const id=e.target.dataset.del;if(!id||!confirm('確定刪除這個爭點？'))return;ls.set('oc_book',JSON.stringify(bookList().filter(x=>x.id!==id)));drawBook()};
+function openEd(k,id){
+  const n=id?notes().find(x=>x.id===id):null;
+  ED={k,id:id||''};
+  $('#ed'+k).innerHTML='<div class="card"><h3>'+(n?'編輯筆記':'新增筆記')+'</h3><input name="t" placeholder="標題" value="'+esc(n?n.title:'')+'"><input name="k" placeholder="關鍵字（用空格或逗號分隔）" style="margin-top:8px" value="'+esc(n?(n.kws||[]).join(' '):'')+'"><textarea name="b" rows="8" placeholder="內容" style="margin-top:8px">'+esc(n?n.body:'')+'</textarea><p style="margin:8px 0 0">資料夾：<select name="f">'+folderOpts(k,n?n.fid:(V[k]||last()[k]))+'</select></p><div class="row" style="margin-top:12px"><button class="b" data-a="es">儲存</button><button class="b g" data-a="ec">取消</button></div></div>';
+  $('#ed'+k).scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function aiMerge(k){
+  const ids=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+  const sel=notes().filter(n=>ids.includes(n.id));
+  if(sel.length<(k==='e'?2:1)){alert(k==='e'?'請先勾選至少 2 則精華':'請先勾選要整理的筆記');return}
+  $('#ap'+k).innerHTML='<p class="mut">AI 整理中…</p>';
+  try{
+    const pr='請把以下'+(k==='e'?'精華':'筆記')+'整理成一則「精華」：保留所有重點與易錯點、去除重複、條列式、白話。優惠類請依店家或類別整理，列出期限與條件，已過期的標註（今天是'+new Date().toLocaleDateString('zh-TW')+'）。只輸出 JSON：{"title":"精華標題","kws":["關鍵字"],"body":"條列式內容（300 字內）"}\n'+JSON.stringify(sel.map(x=>({title:x.title,kws:x.kws,body:x.body})));
+    const o=jparse(await call([{role:'user',parts:[{text:pr}]}],SYS2,true));
+    const rec={title:o.title||sel[0].title,body:Array.isArray(o.body)?o.body.join('\n'):(o.body||''),kws:clean([...(o.kws||[]),...sel.flatMap(x=>x.kws||[])])};
+    AP={k,ids,rec};
+    $('#ap'+k).innerHTML='<div class="card"><b>整理結果（尚未存入）</b><h3 style="margin-top:8px">'+esc(tex(rec.title))+'</h3>'+kt(rec.kws)+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(rec.body))+'</div><p>存到精華資料夾：<select>'+folderOpts('e',last().e)+'</select></p>'+(k==='e'?'<p class="mut">存入後會移除被整併的 '+sel.length+' 則。</p>':'')+'<div class="row"><button class="b" data-a="aok">確認存入</button><button class="b g" data-a="ac">取消</button></div></div>';
+  }catch(e){$('#ap'+k).innerHTML='<p>'+errH(e)+'</p>'}
+}
 async function out(md,name){
   if(!md.trim()){alert('沒有可匯出的內容');return}
   try{await navigator.clipboard.writeText(md);alert('已複製為 Markdown，可貼到筆記軟體。')}
   catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download=name;a.click()}
 }
-$('#exp').onclick=()=>out(tex(bookList().map(x=>'## '+(x.qno?'考題'+x.qno+'｜':'')+x.title+'\n日期：'+x.date+'\n考點：'+(x.kps||x.tags||[]).map(k=>'#'+k).join(' ')+'\n\n**我原本的想法**\n'+x.mine+'\n\n**正確理解**\n'+x.correct+'\n\n**練習題**\n'+x.quiz+'\n').join('\n---\n\n')),'爭點本.md');
-function drawEss(){
-  const g={};bookList().forEach(x=>{if(x.qno)(g[x.qno]=g[x.qno]||[]).push(...(x.kps||[]))});
-  const qm=Object.keys(g).sort((a,b)=>b-a).map(n=>'<li>考題'+n+'：'+kt(clean(g[n]))+'</li>').join('');
-  $('#qmap').innerHTML=qm?'<ul>'+qm+'</ul>':'還沒有資料。';
-  const f=$('#efind').value.trim().replace(/^#/,'').toLowerCase();
-  const E=ess().filter(e=>!f||JSON.stringify(e).toLowerCase().includes(f));
-  $('#elist').innerHTML=E.length?E.map(e=>'<div class="card"><label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" data-e="'+e.id+'" style="width:22px;flex:none;margin-top:5px"><span><b>'+esc(tex(e.name))+'</b> '+(e.qs||[]).slice().sort((a,b)=>a-b).map(q=>'<span class="tag">考題'+q+'</span>').join('')+'<br>'+kt(e.kws)+'</span></label><details><summary>精華整理</summary><p>'+esc(tex(e.summary))+'</p><button class="b g" data-edel="'+e.id+'">刪除</button></details></div>').join(''):'<p class="mut">還沒有精華考點。在「學習」頁整理爭點存檔後，按「綜整爭點」。</p>';
+['n','e'].forEach(k=>$('#p-'+k).onclick=e=>{
+  const t=e.target.closest('[data-a]');if(!t)return;
+  const a=t.dataset.a,i=t.dataset.i,s=$('#s'+k);
+  if(a==='of'){V[k]=i;s.value='';draw(k)}
+  else if(a==='up'){V[k]='';draw(k)}
+  else if(a==='tag'){V[k]='';s.value='#'+i;draw(k)}
+  else if(a==='nf'){const n=(prompt('資料夾名稱')||'').trim();if(n){sv('oc_fold',[...folds(),{id:uid(),name:n,k}]);draw(k)}}
+  else if(a==='rf'){const f=folds().find(x=>x.id===V[k]),n=(prompt('新名稱',f.name)||'').trim();if(n){sv('oc_fold',folds().map(x=>x.id===f.id?{...x,name:n}:x));draw(k)}}
+  else if(a==='df'){const f=folds().find(x=>x.id===V[k]),c=notes().filter(x=>x.fid===f.id).length;if(confirm('刪除資料夾「'+f.name+'」與裡面的 '+c+' 則筆記？無法復原。')){sv('oc_notes',notes().filter(x=>x.fid!==f.id));sv('oc_fold',folds().filter(x=>x.id!==f.id));V[k]='';draw(k)}}
+  else if(a==='nn')openEd(k,null);
+  else if(a==='en')openEd(k,i);
+  else if(a==='dn'){if(confirm('確定刪除這則筆記？')){sv('oc_notes',notes().filter(x=>x.id!==i));draw(k)}}
+  else if(a==='sa')document.querySelectorAll('#p-'+k+' [data-c]').forEach(c=>c.checked=true);
+  else if(a==='ai')aiMerge(k);
+  else if(a==='ac'){AP=null;$('#ap'+k).innerHTML=''}
+  else if(a==='ec'){ED=null;$('#ed'+k).innerHTML=''}
+  else if(a==='es'){
+    const g=n=>$('#ed'+k+' [name='+n+']').value,title=g('t').trim();
+    if(!title){alert('請輸入標題');return}
+    const fid=pickFolder(k,g('f'));if(!fid)return;
+    const rec={title,body:g('b'),kws:clean(g('k').split(/[\s,，、#]+/)),fid};
+    let arr=notes();
+    if(ED.id)arr=arr.map(x=>x.id===ED.id?{...x,...rec}:x);else arr.unshift({id:uid(),k,img:null,date:new Date().toLocaleString('zh-TW'),...rec});
+    sv('oc_notes',arr);rememberF(k,fid);V[k]=fid;s.value='';ED=null;$('#ed'+k).innerHTML='';draw(k);
+  }
+  else if(a==='aok'&&AP){
+    const fid=pickFolder('e',$('#ap'+k+' select').value);if(!fid)return;
+    let arr=notes();if(k==='e')arr=arr.filter(x=>!AP.ids.includes(x.id));
+    arr.unshift({id:uid(),k:'e',fid,...AP.rec,img:null,date:new Date().toLocaleString('zh-TW'),src:AP.ids});
+    sv('oc_notes',arr);rememberF('e',fid);AP=null;
+    $('#ap'+k).innerHTML=k==='n'?'<p class="mut">已存入「精華」頁的資料夾。</p>':'';draw(k);
+  }
+  else if(a==='x'){
+    const md=folds().filter(f=>f.k===k).map(f=>'# '+f.name+'\n\n'+notes().filter(n=>n.k===k&&n.fid===f.id).map(n=>'## '+n.title+'\n'+(n.kws||[]).map(w=>'#'+w).join(' ')+'\n\n'+n.body+'\n').join('\n')).join('\n');
+    out(tex(md),TT[k]+'.md');
+  }
+});
+
+/* ===== API 套用／管理 ===== */
+function fillApis(){
+  const a=apis(),c=cur();
+  $('#api').innerHTML=a.length?a.map(x=>'<option value="'+x.id+'">'+esc(label(x))+'</option>').join(''):'<option value="">尚未新增 API（到設定新增）</option>';
+  if(c)$('#api').value=c.id;
+  $('#lmodel').value=c?c.model:'';$('#lmodel').disabled=!c;
+  $('#mlist').innerHTML=c?P[c.p].m.map(x=>'<option value="'+x+'">').join(''):'';
+  $('#thinkwrap').classList.toggle('hide',!(c&&c.p==='gemini'));
+  $('#think').value=ls.get('oc_think','low');
+  $('#uselist').innerHTML=a.length?a.map(x=>'<label style="display:flex;gap:10px;align-items:center;margin:8px 0"><input type="radio" name="useapi" value="'+x.id+'" style="width:22px;flex:none"'+(c&&c.id===x.id?' checked':'')+'><span><span class="tag" style="color:var(--acc);border-color:var(--acc)">'+esc(P[x.p].n)+'</span><b>'+esc(x.name||'未命名')+'</b><br><span class="mut">金鑰 …'+esc(x.key.slice(-4))+'｜模型 '+esc(x.model||'未設定')+'</span></span></label>').join(''):'<p class="mut">還沒有 API，請按下方「管理 API」新增。</p>';
+  $('#managelist').innerHTML=a.length?a.map(x=>'<div class="row" style="justify-content:space-between;margin:8px 0"><span><b>'+esc(P[x.p].n)+'</b>'+(x.name?' · '+esc(x.name):'')+' <span class="mut">…'+esc(x.key.slice(-4))+'</span></span><button class="b g" style="padding:6px 12px" data-rm="'+x.id+'">移除</button></div>').join(''):'<p class="mut">沒有可管理的 API。</p>';
 }
-$('#efind').oninput=drawEss;
-$('#elist').onclick=e=>{const id=e.target.dataset.edel;if(!id||!confirm('確定刪除這個考點？'))return;ls.set('oc_ess',JSON.stringify(ess().filter(x=>x.id!==id)));drawEss()};
-$('#eexp').onclick=()=>out(tex(ess().map(e=>'## '+e.name+'\n考題：'+(e.qs||[]).slice().sort((a,b)=>a-b).join('、')+'\n關鍵字：'+(e.kws||[]).map(k=>'#'+k).join(' ')+'\n\n'+e.summary+'\n').join('\n')),'精華.md');
-$('#emerge').onclick=async()=>{
-  const ids=[...document.querySelectorAll('#elist input:checked')].map(i=>i.dataset.e);
-  if(ids.length<2){$('#estat').textContent='請先勾選至少 2 個考點。';return}
-  const E=ess(),sel=E.filter(x=>ids.includes(x.id));
-  $('#estat').textContent='AI 整併中…';
-  try{
-    const pr='請把以下考點整併成一個，保留所有重點、去除重複、不要漏掉易錯點。只輸出 JSON：{"name":"整併後考點名稱","kws":["關鍵字"],"summary":"整併後精華整理（白話，200 字內）"}\n'+JSON.stringify(sel.map(x=>({name:x.name,kws:x.kws,summary:x.summary})));
-    const o=jparse(await call([{role:'user',parts:[{text:pr}]}],SYS2,true));
-    const m={id:'e'+Date.now(),name:o.name||sel[0].name,kws:clean([...(o.kws||[]),...sel.flatMap(x=>x.kws||[])]),summary:o.summary||'',qs:[...new Set(sel.flatMap(x=>x.qs||[]))],ids:[...new Set(sel.flatMap(x=>x.ids||[]))],date:new Date().toLocaleString('zh-TW')};
-    ls.set('oc_ess',JSON.stringify([m,...E.filter(x=>!ids.includes(x.id))]));
-    $('#estat').textContent='已整併為「'+tex(m.name)+'」。';drawEss();
-  }catch(err){$('#estat').innerHTML='<span class="err">'+esc(err.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':err.message)+'</span>'}
+function setAct(id){ls.set('oc_act',id);fillApis()}
+$('#api').onchange=()=>setAct($('#api').value);
+$('#uselist').onchange=e=>{if(e.target.name==='useapi')setAct(e.target.value)};
+$('#lmodel').onchange=()=>{const a=apis(),c=cur();if(!c)return;a.find(y=>y.id===c.id).model=$('#lmodel').value.trim();saveApis(a);fillApis()};
+$('#think').onchange=()=>ls.set('oc_think',$('#think').value);
+$('#managelist').onclick=e=>{
+  const id=e.target.dataset.rm;if(!id)return;
+  const x=apis().find(y=>y.id===id);
+  if(!x||!confirm('移除「'+label(x)+'」？金鑰會從這個瀏覽器刪除。'))return;
+  saveApis(apis().filter(y=>y.id!==id));
+  if(ls.get('oc_act','')===id)ls.set('oc_act','');
+  fillApis();
 };
-$('#key').value=ls.get('oc_key','');
-(function(){const m=ls.get('oc_model','')||'gemini-3.8-flash',sel=$('#msel');const has=!!m&&[...sel.options].some(o=>o.value===m);sel.value=has?m:'';$('#model').value=has?'':m;$('#model').classList.toggle('hide',has);$('#think').value=ls.get('oc_think','low')})();
-$('#msel').onchange=()=>$('#model').classList.toggle('hide',$('#msel').value!=='');
-$('#save').onclick=()=>{ls.set('oc_key',$('#key').value.trim());ls.set('oc_model',$('#msel').value||$('#model').value.trim());ls.set('oc_think',$('#think').value);$('#saved').textContent='已儲存'};
+$('#nprov').innerHTML=Object.keys(P).map(k=>'<option value="'+k+'">'+esc(P[k].n)+'</option>').join('');
+$('#nprov').onchange=()=>{const p=$('#nprov').value;$('#nbasewrap').classList.toggle('hide',p!=='compat');$('#nkey').placeholder='API 金鑰 '+P[p].k};
+$('#nadd').onclick=()=>{
+  const p=$('#nprov').value,key=$('#nkey').value.trim(),base=$('#nbase').value.trim();
+  if(!key){$('#nmsg').textContent='請輸入金鑰';return}
+  if(p==='compat'&&!base){$('#nmsg').textContent='請輸入 API 網址';return}
+  const x={id:uid(),p,key,name:$('#nname').value.trim(),base:p==='compat'?base:'',model:P[p].d};
+  const a=apis();a.push(x);saveApis(a);ls.set('oc_act',x.id);
+  ['nkey','nbase','nname'].forEach(i=>$('#'+i).value='');
+  $('#nmsg').textContent='已新增並設為使用中，請到「學習」頁確認模型';
+  fillApis();
+};
+const goHome=()=>{$('#s-manage').classList.add('hide');$('#s-home').classList.remove('hide')};
+$('#gomanage').onclick=()=>{$('#s-home').classList.add('hide');$('#s-manage').classList.remove('hide');window.scrollTo(0,0)};
+$('#mback').onclick=()=>{goHome();window.scrollTo(0,0)};
+
+/* ===== 雲端同步（加密後存到 GitHub 私密 Gist） ===== */
+const toB=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const fromB=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+async function dk(pw,salt){
+  if(!window.crypto||!crypto.subtle)throw new Error('此頁面需要 https 才能加密同步，請改從 GitHub Pages 網址開啟');
+  const m=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function enc(obj,pw){
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const k=await dk(pw,salt);
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(obj))));
+  return JSON.stringify({v:1,s:toB(salt),i:toB(iv),d:toB(ct)});
+}
+async function dec(txt,pw){
+  const j=JSON.parse(txt),k=await dk(pw,fromB(j.s));
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:fromB(j.i)},k,fromB(j.d))));
+}
+const gOn=()=>ls.get('oc_gh_tok','')&&ls.get('oc_gh_pw','');
+const gh=(path,o)=>fetch('https://api.github.com'+path,Object.assign({},o,{headers:{Authorization:'Bearer '+ls.get('oc_gh_tok',''),Accept:'application/vnd.github+json','Content-Type':'application/json'}}));
+async function ghOk(r){if(r.ok)return;throw new Error(r.status===401?'GitHub token 無效或已過期':(r.status===403||r.status===404)?'GitHub 拒絕存取（token 需要 gist 權限）':'GitHub 錯誤 '+r.status)}
+async function gistId(){
+  let id=ls.get('oc_gist','');if(id)return id;
+  const r=await gh('/gists?per_page=100');await ghOk(r);
+  const g=(await r.json()).find(x=>x.description==='oc-notebook-sync');
+  if(g){ls.set('oc_gist',g.id);return g.id}
+  return null;
+}
+async function pull(){
+  const id=await gistId();if(!id)return null;
+  const r=await gh('/gists/'+id);await ghOk(r);
+  const f=(await r.json()).files['oc.json'];if(!f)return null;
+  let c=f.content;if(f.truncated)c=await(await fetch(f.raw_url)).text();
+  return dec(c,ls.get('oc_gh_pw',''));
+}
+async function push(){
+  const ts=Date.now(),data={};
+  SK.forEach(k=>{const v=ls.get(k,null);if(v!==null)data[k]=v});
+  const files={'oc.json':{content:await enc({ts,data},ls.get('oc_gh_pw',''))}};
+  const id=await gistId();
+  const r=id?await gh('/gists/'+id,{method:'PATCH',body:JSON.stringify({files})}):await gh('/gists',{method:'POST',body:JSON.stringify({description:'oc-notebook-sync',public:false,files})});
+  await ghOk(r);
+  if(!id)ls.set('oc_gist',(await r.json()).id);
+  ls.set('oc_sync',String(ts));
+}
+function applyRemote(p){
+  try{
+    SK.forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k]);else localStorage.removeItem(k)});
+    ['oc_book','oc_ess'].forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k])});
+    localStorage.setItem('oc_sync',String(p.ts));localStorage.setItem('oc_mod',String(p.ts));
+  }catch(e){}
+  migrate();fillApis();draw('n');draw('e');
+}
+const hasLocal=()=>apis().length||notes().length;
+const gmsg=(t,e)=>{$('#gstat').innerHTML=e?'<span class="err">'+esc(t)+'</span>':esc(t)};
+const gerr=e=>e&&e.name==='OperationError'?'同步密碼錯誤，或雲端資料已損毀':e.message;
+let pt;
+window.schedPush=()=>{if(!gOn())return;clearTimeout(pt);pt=setTimeout(async()=>{try{await push();gmsg('已自動上傳 '+new Date().toLocaleTimeString('zh-TW'))}catch(e){gmsg('自動上傳失敗：'+gerr(e),1)}},4000)};
+async function autoSync(){
+  if(!gOn())return;
+  try{
+    gmsg('同步中…');
+    const r=await pull(),s=+ls.get('oc_sync','0'),L=+ls.get('oc_mod','0');
+    if(r&&r.ts>s){
+      if((L<=s&&!(s===0&&hasLocal()))||confirm('雲端與這台裝置都有內容。要用雲端版本覆蓋這台嗎？（取消則保留本機並上傳覆蓋雲端）')){applyRemote(r);gmsg('已從雲端更新');return}
+    }
+    if(!r||L>s||s===0){await push();gmsg('已上傳')}else gmsg('已是最新');
+  }catch(e){gmsg('同步失敗：'+gerr(e),1)}
+}
+$('#gsave').onclick=()=>{ls.set('oc_gh_tok',$('#gtok').value.trim());ls.set('oc_gh_pw',$('#gpw').value);if(!gOn()){gmsg('請填入 token 和同步密碼',1);return}autoSync()};
+$('#gup').onclick=async()=>{if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}try{gmsg('上傳中…');await push();gmsg('已上傳')}catch(e){gmsg('上傳失敗：'+gerr(e),1)}};
+$('#gdown').onclick=async()=>{
+  if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}
+  try{gmsg('下載中…');const r=await pull();if(!r){gmsg('雲端還沒有資料',1);return}
+    if(!confirm('用雲端版本覆蓋這台裝置的資料？'))return;applyRemote(r);gmsg('已從雲端更新')}
+  catch(e){gmsg('下載失敗：'+gerr(e),1)}
+};
+$('#gtok').value=ls.get('oc_gh_tok','');$('#gpw').value=ls.get('oc_gh_pw','');
+migrate();$('#nprov').onchange();fillApis();draw('n');draw('e');autoSync();
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
-  ['learn','book','ess','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
-  if(b.dataset.t==='book')drawBook();if(b.dataset.t==='ess')drawEss();
+  ['learn','n','e','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
+  if(b.dataset.t==='n'||b.dataset.t==='e')draw(b.dataset.t);
+  if(b.dataset.t==='set')goHome();
 });
 </script>
 </body>
