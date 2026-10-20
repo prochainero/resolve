@@ -29,6 +29,9 @@ h2{font-size:19px;margin:6px 0 12px}h3{font-size:17px;margin:0 0 6px}
 .tag{display:inline-block;font-size:13px;padding:1px 9px;border:1px solid var(--bd);border-radius:99px;margin:0 6px 4px 0;color:var(--mut)}
 details summary{cursor:pointer;color:var(--acc);font-weight:600}
 .hide{display:none}
+ul{padding-left:18px;margin:6px 0}li{margin:5px 0}
+.act{display:flex;gap:6px;margin-top:8px}.act button{font-size:13px;padding:3px 11px;border:1px solid var(--bd);background:none;color:var(--mut);border-radius:6px}
+nav button{font-size:15px}
 </style>
 </head>
 <body>
@@ -36,30 +39,42 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <section id="p-learn">
  <div class="card">
   <div class="row">
-   <label class="b">拍照或選圖<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
-   <label class="b g" style="background:none;color:var(--acc);border:1px solid var(--acc)">從相簿選<input id="file2" type="file" accept="image/*" hidden></label>
-   <button class="b g" id="reset">新的一題 / 取消</button>
+   <label class="b">拍照、選圖<input id="file" type="file" accept="image/*" hidden></label>
+   <button class="b g" id="reset">新聊天</button>
   </div>
-  <p class="mut" id="hint">拍下結構式、反應機構或題目。AI 會先說明它看到了什麼，請你確認有沒有看錯。</p>
+  <p class="mut" id="hint">可連續問很多題：每拍一張就是新的一題，AI 記得前面的討論。頁面卡頓時再按「新聊天」。</p>
  </div>
  <div id="chat"></div>
- <div id="composer" class="card hide">
+ <div id="composer" class="card">
   <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得這裡應該是 SN1，因為…"></textarea>
   <div class="row" style="margin-top:8px">
    <button class="b" id="send">送出</button>
    <button class="b g" id="sum">整理爭點並存檔</button>
+   <button class="b g" id="syn">綜整爭點</button>
   </div>
-  <p class="mut" id="status"></p>
+  <div class="mut" id="status" style="margin-top:8px"></div>
  </div>
 </section>
 
 <section id="p-book" class="hide">
- <h2>爭點本</h2>
+ <h2>爭點本（大資料庫）</h2>
  <div class="row" style="margin-bottom:12px">
   <input id="find" placeholder="搜尋標題、標籤、內容" style="flex:1">
   <button class="b g" id="exp">匯出</button>
  </div>
  <div id="list"></div>
+</section>
+
+<section id="p-ess" class="hide">
+ <h2>精華（AI 目錄）</h2>
+ <div class="card"><b>考題 → 考點</b><div id="qmap" class="mut"></div></div>
+ <div class="row" style="margin-bottom:8px">
+  <input id="efind" placeholder="搜尋考點、關鍵字" style="flex:1">
+  <button class="b g" id="emerge">整併勾選</button>
+  <button class="b g" id="eexp">匯出</button>
+ </div>
+ <p class="mut" id="estat"></p>
+ <div id="elist"></div>
 </section>
 
 <section id="p-set" class="hide">
@@ -86,21 +101,26 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
  <div class="card"><p class="mut" style="margin:0">圖片會送到 Google 處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。爭點資料只存在這台裝置的瀏覽器，清除瀏覽資料會消失，請定期匯出。</p></div>
 </section>
 </main>
-<nav><button data-t="learn" class="on">學習</button><button data-t="book">爭點本</button><button data-t="set">設定</button></nav>
+<nav><button data-t="learn" class="on">學習</button><button data-t="book">爭點本</button><button data-t="ess">精華</button><button data-t="set">設定</button></nav>
 
 <script>
 const $=s=>document.querySelector(s);
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let S={hist:[],thumb:null,busy:false};
+let S={hist:[],thumb:null,busy:false,qStart:0,qid:null,qno:null,pend:null};
 
-const SYS=`你是有機化學家教，對象是正在自學的學生。一律使用繁體中文，用白話、生活化的比喻解釋，專有名詞第一次出現時附英文。
+const SYS=`你是有機化學家教，對象是正在自學的學生。一律使用繁體中文，用白話、生活化的比喻解釋，專有名詞第一次出現時附英文。禁止使用 LaTeX 或美元符號 $；化學式與符號用一般文字和 Unicode，例如 SN2、H₂O、CH₃⁺、→、⇌、δ+。
 收到圖片時，第一步先列出「我看到的內容」：結構、官能基、箭頭與電子流向、試劑與條件；看不清楚的地方明說「不確定」，不要猜。第二步才解釋。
 討論時，注意學生的想法哪裡正確、哪裡有落差。不要直接給完整答案，先指出關鍵線索並提問，讓學生自己推。`;
-const SUM=`請回顧以上整段對話，找出學生「理解有落差、想錯、或反覆卡住」的爭點（最多 6 個，沒有就回傳空陣列）。
-只輸出 JSON 陣列，每個元素格式：
-{"title":"爭點標題","mine":"學生原本的想法","correct":"正確理解（白話）","tags":["反應類型或概念"],"quiz":"一道可自我檢驗的練習題"}
-全部使用繁體中文。`;
+const sumP=v=>`請回顧以上「這一題」的對話，找出學生「理解有落差、想錯、或反覆卡住」的爭點（最多 6 個，沒有就回傳空陣列）。
+只輸出 JSON 物件：{"q":"這題的一句話摘要","issues":[{"title":"爭點標題","mine":"學生原本的想法","correct":"正確理解（白話）","kps":["考點關鍵字"],"quiz":"一道可自我檢驗的練習題"}]}
+kps 是 1 到 3 個「考點關鍵字」，2 到 8 個字、以名詞為主（例如 SN2 反應、立體化學）。已有的關鍵字請優先沿用，同義的不要另創：${v||'（目前沒有）'}。
+全部使用繁體中文，不要用 LaTeX。`;
+const SYS2='你是有機化學筆記整理助手。使用繁體中文，不要用 LaTeX 或 $ 符號。';
+const ess=()=>{try{return JSON.parse(ls.get('oc_ess','[]'))}catch(e){return[]}};
+const clean=a=>[...new Set((a||[]).map(k=>String(k).replace(/^#/,'').trim()).filter(Boolean))];
+const jparse=r=>JSON.parse(r.replace(/```json|```/g,'').trim());
+function ctx(h){let n=0;return h.slice().reverse().map(m=>{if(m.parts.some(p=>p.inline_data)){n++;if(n>2)return{role:m.role,parts:m.parts.filter(p=>!p.inline_data).concat([{text:'（較早的圖片已省略）'}])}}return m}).reverse()}
 
 async function call(contents,system,json){
   const k=ls.get('oc_key','');
@@ -114,24 +134,37 @@ async function call(contents,system,json){
   if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型名稱（例如 gemini-flash-latest）。');
   if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+(th&&r.status===400?'（若與思考程度有關，請到設定改回「預設」）':''));
+  if(!r.ok)throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+(/think/i.test((d.error&&d.error.message)||'')?'（看起來與思考設定有關，請到設定改回「預設」）':''));
   const p=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts;
   if(!p)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
   return p.map(x=>x.text||'').join('');
 }
 function shrink(file,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height));const c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=URL.createObjectURL(file)})}
 
+const SUB={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋'},SUP={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻'};
+function tex(t){
+  t=String(t==null?'':t).replace(/\$\$?([^$]+?)\$\$?/g,(m,x)=>x
+    .replace(/\\(?:text|mathrm|mathbf|textbf|mathit|ce)\{([^}]*)\}/g,'$1')
+    .replace(/\\(?:rightarrow|to)(?![a-zA-Z])/g,'→').replace(/\\leftarrow(?![a-zA-Z])/g,'←').replace(/\\leftrightarrow(?![a-zA-Z])/g,'↔')
+    .replace(/\\(?:rightleftharpoons|leftrightharpoons)(?![a-zA-Z])/g,'⇌')
+    .replace(/\\delta(?![a-zA-Z])/g,'δ').replace(/\\Delta(?![a-zA-Z])/g,'Δ').replace(/\\alpha(?![a-zA-Z])/g,'α').replace(/\\beta(?![a-zA-Z])/g,'β').replace(/\\pi(?![a-zA-Z])/g,'π').replace(/\\sigma(?![a-zA-Z])/g,'σ')
+    .replace(/\\pm(?![a-zA-Z])/g,'±').replace(/\\cdot(?![a-zA-Z])/g,'·').replace(/\\neq(?![a-zA-Z])/g,'≠')
+    .replace(/_\{([^}]*)\}/g,(m,a)=>[...a].map(c=>SUB[c]||c).join('')).replace(/_([0-9+\-])/g,(m,a)=>SUB[a]).replace(/_([A-Za-z])/g,'$1')
+    .replace(/\^\{([^}]*)\}/g,(m,a)=>[...a].map(c=>SUP[c]||c).join('')).replace(/\^([0-9+\-])/g,(m,a)=>SUP[a])
+    .replace(/\\[,;: ]/g,' ').replace(/[{}]/g,'').replace(/\\/g,''));
+  return t.replace(/\$/g,'');
+}
 function render(){
-  $('#chat').innerHTML=S.hist.map(h=>{
+  $('#chat').innerHTML=S.hist.map((h,i)=>{
     const t=h.parts.filter(p=>p.text).map(p=>p.text).join('');
     const img=h.parts.find(p=>p.inline_data);
-    if(h.role==='user')return '<div class="msg me">'+(img?'<img class="pv" src="data:image/jpeg;base64,'+img.inline_data.data+'">':'')+esc(t)+'</div>';
-    return '<div class="msg">'+esc(t)+'</div>';
+    const ab='<div class="act"><button data-cp="'+i+'">複製</button><button data-qt="'+i+'">引用</button></div>';
+    if(h.role==='user')return '<div class="msg me">'+(img?'<img class="pv" src="data:image/jpeg;base64,'+img.inline_data.data+'">':'')+esc(t)+ab+'</div>';
+    return '<div class="msg">'+esc(tex(t))+(t?ab:'')+'</div>';
   }).join('');
-  $('#composer').classList.toggle('hide',!S.hist.length);
   window.scrollTo(0,document.body.scrollHeight);
 }
-function busy(b,msg){S.busy=b;['send','sum'].forEach(i=>$('#'+i).disabled=b);$('#status').innerHTML=msg||''}
+function busy(b,msg){S.busy=b;['send','sum','syn'].forEach(i=>$('#'+i).disabled=b);$('#status').innerHTML=msg||''}
 async function stream(contents,system,on){
   const k=ls.get('oc_key','');
   if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
@@ -149,7 +182,9 @@ async function stream(contents,system,on){
       const d=await r.json().catch(()=>({}));
       if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型。');
       if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
-      throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+'（若與思考設定有關，請到設定把思考程度改成「預設」）');
+      const msg=(d.error&&d.error.message)||('錯誤 '+r.status);
+      if(r.status===503||/overload|high demand|unavailable/i.test(msg))throw new Error('這個模型現在使用人數太多（伺服器忙碌），不是你的設定問題。請稍等幾分鐘重試，或到設定換一個模型（例如 Flash Lite）。\n原始訊息：'+msg);
+      throw new Error(msg+(/think/i.test(msg)?'\n（看起來與思考設定有關，請到設定把思考程度改成「預設」）':''));
     }
     const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='';
     try{
@@ -181,46 +216,114 @@ async function ask(){
   render();
 }
 async function pick(f){
-  if(!f)return;
+  if(!f||S.busy)return;
   const url=await shrink(f,1500,.85);S.thumb=await shrink(f,160,.7);
-  S.hist=[{role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:'請解析這張圖。'}]}];
-  $('#hint').textContent='';render();ask();
+  S.qStart=S.hist.length;S.qid=Date.now()+'';S.qno=null;S.pend=null;
+  S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:'請解析這張圖。'}]});
+  render();ask();
 }
-$('#file').onchange=e=>pick(e.target.files[0]);
-$('#file2').onchange=e=>pick(e.target.files[0]);
-$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;$('#hint').textContent='拍下結構式、反應機構或題目。AI 會先說明它看到了什麼，請你確認有沒有看錯。';$('#status').textContent='';render()};
+$('#file').onchange=e=>{pick(e.target.files[0]);e.target.value=''};
+$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;S.qStart=0;S.qid=null;S.qno=null;S.pend=null;$('#status').textContent='';render()};
+$('#chat').onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const d=b.dataset,i=d.cp!==undefined?d.cp:d.qt;if(i===undefined)return;
+  const t=tex(S.hist[i].parts.filter(p=>p.text).map(p=>p.text).join(''));
+  if(d.cp!==undefined){try{await navigator.clipboard.writeText(t);b.textContent='已複製'}catch(x){b.textContent='複製失敗'}setTimeout(()=>{b.textContent='複製'},1500)}
+  else{const q=$('#q');q.value=(q.value?q.value+'\n':'')+t.split('\n').map(l=>'> '+l).join('\n')+'\n\n';q.focus()}
+};
 $('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();ask()};
 $('#sum').onclick=async()=>{
-  if(S.busy||S.hist.length<2)return;
+  if(S.busy||S.hist.length-S.qStart<2)return;
   busy(true,'整理爭點中…');
   try{
-    const raw=await call([...S.hist,{role:'user',parts:[{text:SUM}]}],SYS,true);
-    const arr=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if(!Array.isArray(arr)||!arr.length){busy(false,'這次對話沒有找到明顯的爭點。多說說你的想法再試一次。');return}
-    const book=JSON.parse(ls.get('oc_book','[]'));
+    const book=bookList();
+    const vocab=clean([...book.flatMap(x=>x.kps||x.tags||[]),...ess().flatMap(e=>[e.name,...(e.kws||[])])]).slice(0,150).join('、');
+    const o=jparse(await call([...ctx(S.hist.slice(S.qStart)),{role:'user',parts:[{text:sumP(vocab)}]}],SYS,true));
+    const arr=Array.isArray(o)?o:(o.issues||[]);
+    if(!arr.length){busy(false,'這次對話沒有找到明顯的爭點。多說說你的想法再試一次。');return}
+    if(!S.qid)S.qid=Date.now()+'';
+    if(S.qno==null){S.qno=+ls.get('oc_qn','0')+1;ls.set('oc_qn',String(S.qno))}
     const d=new Date().toLocaleString('zh-TW');
-    arr.forEach((x,i)=>book.unshift({id:Date.now()+'-'+i,date:d,thumb:S.thumb,title:x.title||'（未命名）',mine:x.mine||'',correct:x.correct||'',tags:x.tags||[],quiz:x.quiz||''}));
-    const ok=ls.set('oc_book',JSON.stringify(book));
-    busy(false,ok?'已存入 '+arr.length+' 個爭點，可到「爭點本」查看。':'<span class="err">儲存失敗（瀏覽器空間不足），請先匯出再刪除舊紀錄。</span>');
+    const items=arr.map((x,i)=>({id:S.qid+'-'+i,qid:S.qid,qno:S.qno,qsum:o.q||'',date:d,thumb:S.thumb,title:x.title||'（未命名）',mine:x.mine||'',correct:x.correct||'',kps:clean(x.kps||x.tags),quiz:x.quiz||''}));
+    const ok=ls.set('oc_book',JSON.stringify([...items,...book.filter(x=>x.qid!==S.qid)]));
+    busy(false,ok?'已存入考題 '+S.qno+' 的 '+items.length+' 個爭點。接著可按「綜整爭點」，連結過去筆記。':'<span class="err">儲存失敗（瀏覽器空間不足），請先匯出再刪除舊紀錄。</span>');
   }catch(e){busy(false,'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>')}
 };
+$('#syn').onclick=async()=>{
+  if(S.busy)return;
+  const book=bookList(),cur=book.filter(x=>x.qid===S.qid);
+  if(!S.qid||!cur.length){$('#status').textContent='請先按「整理爭點並存檔」。';return}
+  busy(true,'比對過去筆記中…');
+  try{
+    const kw=cur.flatMap(x=>x.kps||[]);
+    const hit=e=>[e.name,...(e.kws||[])].some(k=>kw.some(w=>k.includes(w)||w.includes(k)));
+    const E=ess().slice(0,120).map(e=>({id:e.id,name:e.name,kws:e.kws,qs:e.qs,summary:hit(e)?e.summary:(e.summary||'').slice(0,80)}));
+    const old=book.filter(x=>x.qid!==S.qid).slice(0,80).map(x=>({qno:x.qno,title:x.title,kps:x.kps}));
+    const pr='以下是「考題'+S.qno+'」的新爭點：'+JSON.stringify(cur.map(x=>({title:x.title,kps:x.kps,correct:x.correct})))
+     +'\n既有的精華考點：'+JSON.stringify(E)+'\n過去的爭點（供查找關聯）：'+JSON.stringify(old)
+     +'\n請整理這題涉及的每個考點，避免重複：若與既有精華考點相同或相近，就併入（mergeId 填該 id），summary 要寫成「合併既有內容後的完整新版」；否則 mergeId 為 null 並新建。related 用一句話說明這個考點與過去哪些考題或考點有關，沒有就留空。'
+     +'\n只輸出 JSON：{"links":[{"name":"考點名稱","kws":["關鍵字"],"mergeId":null,"related":"","summary":"精華整理（白話、含易錯點，150 字內）"}]}';
+    const o=jparse(await call([{role:'user',parts:[{text:pr}]}],SYS2,true));
+    const links=o.links||[];
+    if(!links.length){busy(false,'沒有可綜整的考點。');return}
+    S.pend={qno:S.qno,ids:cur.map(x=>x.id),links};
+    busy(false,'<b>綜整結果（尚未存入）</b>'+links.map(l=>'<div class="card" style="margin-top:8px"><b>'+esc(tex(l.name))+'</b> <span class="tag">'+(l.mergeId&&ess().some(x=>x.id===l.mergeId)?'併入既有':'新考點')+'</span><br>'+esc(tex(l.related||'與過去筆記暫無明顯關聯'))+'</div>').join('')+'<p><button class="b" id="ok">確認存入精華</button></p>');
+  }catch(e){busy(false,'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>')}
+};
+$('#status').onclick=e=>{
+  if(e.target.id!=='ok'||!S.pend)return;
+  const P=S.pend,now=new Date().toLocaleString('zh-TW');let E=ess();
+  P.links.forEach(l=>{
+    const kws=clean(l.kws),e2=l.mergeId&&E.find(x=>x.id===l.mergeId);
+    if(e2){e2.summary=l.summary||e2.summary;e2.kws=clean([...(e2.kws||[]),...kws]);e2.qs=[...new Set([...(e2.qs||[]),P.qno])];e2.ids=[...new Set([...(e2.ids||[]),...P.ids])];e2.date=now}
+    else E.unshift({id:'e'+Date.now()+Math.random().toString(36).slice(2,6),name:l.name,kws,summary:l.summary||'',qs:[P.qno],ids:P.ids,date:now});
+  });
+  const ok=ls.set('oc_ess',JSON.stringify(E));S.pend=null;
+  busy(false,ok?'已存入精華（共 '+E.length+' 個考點），可到「精華」頁查看。':'<span class="err">儲存失敗，請先匯出再刪除舊紀錄。</span>');
+};
 
-function bookList(){return JSON.parse(ls.get('oc_book','[]'))}
+function bookList(){try{return JSON.parse(ls.get('oc_book','[]'))}catch(e){return[]}}
+const kt=a=>(a||[]).map(k=>'<span class="tag">#'+esc(tex(k))+'</span>').join('');
 function drawBook(){
-  const f=$('#find').value.trim().toLowerCase();
-  const b=bookList().filter(x=>!f||JSON.stringify(x).toLowerCase().includes(f));
-  $('#list').innerHTML=b.length?b.map(x=>'<div class="card"><div class="row" style="flex-wrap:nowrap;align-items:flex-start">'+(x.thumb?'<img class="th" src="'+x.thumb+'">':'')+'<div><h3>'+esc(x.title)+'</h3><div>'+(x.tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div><div class="mut">'+esc(x.date)+'</div></div></div>'
-   +'<p><b>我原本的想法</b><br>'+esc(x.mine)+'</p><p><b>正確理解</b><br>'+esc(x.correct)+'</p>'
-   +'<details><summary>練習題（先自己答）</summary><p>'+esc(x.quiz)+'</p></details>'
-   +'<p style="margin:10px 0 0"><button class="b g" data-del="'+x.id+'">刪除</button></p></div>').join(''):'<p class="mut">還沒有爭點。到「學習」頁拍一題，討論後按「整理爭點並存檔」。</p>';
+  const f=$('#find').value.trim().replace(/^#/,'').toLowerCase();
+  const b=bookList().filter(x=>!f||(JSON.stringify(Object.assign({},x,{thumb:0}))+'考題'+x.qno).toLowerCase().includes(f));
+  const g={};b.forEach(x=>{const k=x.qid||x.id;(g[k]=g[k]||[]).push(x)});
+  $('#list').innerHTML=b.length?Object.values(g).map(a=>{const x=a[0];
+    return '<div class="card"><h3>'+(x.qno?'考題 '+x.qno:'舊紀錄')+' <span class="mut" style="font-weight:400">'+esc(x.date)+'</span></h3>'+(x.qsum?'<div class="mut">'+esc(tex(x.qsum))+'</div>':'')
+    +'<ul>'+a.map(i=>'<li><details><summary>'+esc(tex(i.title))+' '+kt(i.kps||i.tags)+'</summary><p><b>我原本的想法</b><br>'+esc(tex(i.mine))+'</p><p><b>正確理解</b><br>'+esc(tex(i.correct))+'</p><p><b>練習題</b><br>'+esc(tex(i.quiz))+'</p><button class="b g" data-del="'+i.id+'">刪除</button></details></li>').join('')+'</ul></div>'}).join('')
+    :'<p class="mut">沒有符合的爭點。到「學習」頁拍一題，討論後按「整理爭點並存檔」。</p>';
 }
 $('#find').oninput=drawBook;
 $('#list').onclick=e=>{const id=e.target.dataset.del;if(!id||!confirm('確定刪除這個爭點？'))return;ls.set('oc_book',JSON.stringify(bookList().filter(x=>x.id!==id)));drawBook()};
-$('#exp').onclick=async()=>{
-  const md=bookList().map(x=>'## '+x.title+'\n日期：'+x.date+'\n標籤：'+(x.tags||[]).join('、')+'\n\n**我原本的想法**\n'+x.mine+'\n\n**正確理解**\n'+x.correct+'\n\n**練習題**\n'+x.quiz+'\n').join('\n---\n\n');
-  if(!md){alert('沒有可匯出的內容');return}
+async function out(md,name){
+  if(!md.trim()){alert('沒有可匯出的內容');return}
   try{await navigator.clipboard.writeText(md);alert('已複製為 Markdown，可貼到筆記軟體。')}
-  catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download='爭點本.md';a.click()}
+  catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download=name;a.click()}
+}
+$('#exp').onclick=()=>out(tex(bookList().map(x=>'## '+(x.qno?'考題'+x.qno+'｜':'')+x.title+'\n日期：'+x.date+'\n考點：'+(x.kps||x.tags||[]).map(k=>'#'+k).join(' ')+'\n\n**我原本的想法**\n'+x.mine+'\n\n**正確理解**\n'+x.correct+'\n\n**練習題**\n'+x.quiz+'\n').join('\n---\n\n')),'爭點本.md');
+function drawEss(){
+  const g={};bookList().forEach(x=>{if(x.qno)(g[x.qno]=g[x.qno]||[]).push(...(x.kps||[]))});
+  const qm=Object.keys(g).sort((a,b)=>b-a).map(n=>'<li>考題'+n+'：'+kt(clean(g[n]))+'</li>').join('');
+  $('#qmap').innerHTML=qm?'<ul>'+qm+'</ul>':'還沒有資料。';
+  const f=$('#efind').value.trim().replace(/^#/,'').toLowerCase();
+  const E=ess().filter(e=>!f||JSON.stringify(e).toLowerCase().includes(f));
+  $('#elist').innerHTML=E.length?E.map(e=>'<div class="card"><label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" data-e="'+e.id+'" style="width:22px;flex:none;margin-top:5px"><span><b>'+esc(tex(e.name))+'</b> '+(e.qs||[]).slice().sort((a,b)=>a-b).map(q=>'<span class="tag">考題'+q+'</span>').join('')+'<br>'+kt(e.kws)+'</span></label><details><summary>精華整理</summary><p>'+esc(tex(e.summary))+'</p><button class="b g" data-edel="'+e.id+'">刪除</button></details></div>').join(''):'<p class="mut">還沒有精華考點。在「學習」頁整理爭點存檔後，按「綜整爭點」。</p>';
+}
+$('#efind').oninput=drawEss;
+$('#elist').onclick=e=>{const id=e.target.dataset.edel;if(!id||!confirm('確定刪除這個考點？'))return;ls.set('oc_ess',JSON.stringify(ess().filter(x=>x.id!==id)));drawEss()};
+$('#eexp').onclick=()=>out(tex(ess().map(e=>'## '+e.name+'\n考題：'+(e.qs||[]).slice().sort((a,b)=>a-b).join('、')+'\n關鍵字：'+(e.kws||[]).map(k=>'#'+k).join(' ')+'\n\n'+e.summary+'\n').join('\n')),'精華.md');
+$('#emerge').onclick=async()=>{
+  const ids=[...document.querySelectorAll('#elist input:checked')].map(i=>i.dataset.e);
+  if(ids.length<2){$('#estat').textContent='請先勾選至少 2 個考點。';return}
+  const E=ess(),sel=E.filter(x=>ids.includes(x.id));
+  $('#estat').textContent='AI 整併中…';
+  try{
+    const pr='請把以下考點整併成一個，保留所有重點、去除重複、不要漏掉易錯點。只輸出 JSON：{"name":"整併後考點名稱","kws":["關鍵字"],"summary":"整併後精華整理（白話，200 字內）"}\n'+JSON.stringify(sel.map(x=>({name:x.name,kws:x.kws,summary:x.summary})));
+    const o=jparse(await call([{role:'user',parts:[{text:pr}]}],SYS2,true));
+    const m={id:'e'+Date.now(),name:o.name||sel[0].name,kws:clean([...(o.kws||[]),...sel.flatMap(x=>x.kws||[])]),summary:o.summary||'',qs:[...new Set(sel.flatMap(x=>x.qs||[]))],ids:[...new Set(sel.flatMap(x=>x.ids||[]))],date:new Date().toLocaleString('zh-TW')};
+    ls.set('oc_ess',JSON.stringify([m,...E.filter(x=>!ids.includes(x.id))]));
+    $('#estat').textContent='已整併為「'+tex(m.name)+'」。';drawEss();
+  }catch(err){$('#estat').innerHTML='<span class="err">'+esc(err.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':err.message)+'</span>'}
 };
 $('#key').value=ls.get('oc_key','');
 (function(){const m=ls.get('oc_model','')||'gemini-3.8-flash',sel=$('#msel');const has=!!m&&[...sel.options].some(o=>o.value===m);sel.value=has?m:'';$('#model').value=has?'':m;$('#model').classList.toggle('hide',has);$('#think').value=ls.get('oc_think','low')})();
@@ -228,8 +331,8 @@ $('#msel').onchange=()=>$('#model').classList.toggle('hide',$('#msel').value!=='
 $('#save').onclick=()=>{ls.set('oc_key',$('#key').value.trim());ls.set('oc_model',$('#msel').value||$('#model').value.trim());ls.set('oc_think',$('#think').value);$('#saved').textContent='已儲存'};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
-  ['learn','book','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
-  if(b.dataset.t==='book')drawBook();
+  ['learn','book','ess','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
+  if(b.dataset.t==='book')drawBook();if(b.dataset.t==='ess')drawEss();
 });
 </script>
 </body>
