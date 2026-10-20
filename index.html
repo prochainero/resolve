@@ -67,9 +67,20 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
  <div class="card">
   <p><b>API 金鑰</b><br><span class="mut">到 Google AI Studio 的「Get API key」免費建立，貼在這裡。金鑰只存在這個瀏覽器。</span></p>
   <input id="key" type="password" placeholder="AIza…" autocomplete="off">
-  <p><b>模型</b><br><span class="mut">可直接輸入模型名稱。額度用完（429）時換一個再試。</span></p>
-  <input id="model" list="ml" placeholder="gemini-3-flash-preview">
-  <datalist id="ml"><option value="gemini-3-flash-preview"><option value="gemini-flash-latest"><option value="gemini-pro-latest"><option value="gemini-3-pro-preview"><option value="gemini-2.5-flash"><option value="gemini-2.5-flash-lite"></datalist>
+  <p><b>模型</b><br><span class="mut">標示 Paid 的模型需要付費帳號。免費帳號請先試沒有 Paid 標示的；額度用完（429）時換一個。</span></p>
+  <select id="msel">
+   <option value="gemini-3.8-flash">Gemini 3.8 Flash（新）</option>
+   <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite（快、省額度）</option>
+   <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+   <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+   <option value="gemini-3.6-flash">Gemini 3.6 Flash（Paid）</option>
+   <option value="gemini-3-flash-preview">Gemini 3 Flash Preview（Paid）</option>
+   <option value="gemini-4-argon">Gemini 4 Argon（Paid，最強）</option>
+   <option value="">其他（自行輸入名稱）</option>
+  </select>
+  <input id="model" class="hide" placeholder="輸入模型名稱，例如 gemini-flash-latest" style="margin-top:8px">
+  <p><b>思考程度</b><br><span class="mut">越高越準但越慢、越耗額度。結構式和反應機構建議用中或高。若模型不支援會顯示錯誤，改回「預設」即可。</span></p>
+  <select id="think"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select>
   <div class="row" style="margin-top:12px"><button class="b" id="save">儲存設定</button><span id="saved" class="mut"></span></div>
  </div>
  <div class="card"><p class="mut" style="margin:0">圖片會送到 Google 處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。爭點資料只存在這台裝置的瀏覽器，清除瀏覽資料會消失，請定期匯出。</p></div>
@@ -94,16 +105,16 @@ const SUM=`請回顧以上整段對話，找出學生「理解有落差、想錯
 async function call(contents,system,json){
   const k=ls.get('oc_key','');
   if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
-  const m=ls.get('oc_model','')||'gemini-3-flash-preview';
+  const m=ls.get('oc_model','')||'gemini-3.8-flash';
   const body={contents,systemInstruction:{parts:[{text:system}]}};
-  if(json)body.generationConfig={responseMimeType:'application/json'};
+  const gc={};if(json)gc.responseMimeType='application/json';const th=ls.get('oc_think','');if(th)gc.thinkingConfig={thinkingLevel:th};if(Object.keys(gc).length)body.generationConfig=gc;
   let r;
   try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
   catch(e){throw new Error('連線失敗，請檢查網路')}
   if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型名稱（例如 gemini-flash-latest）。');
   if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error((d.error&&d.error.message)||('錯誤 '+r.status));
+  if(!r.ok)throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+(th&&r.status===400?'（若與思考程度有關，請到設定改回「預設」）':''));
   const p=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts;
   if(!p)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
   return p.map(x=>x.text||'').join('');
@@ -169,8 +180,10 @@ $('#exp').onclick=async()=>{
   try{await navigator.clipboard.writeText(md);alert('已複製為 Markdown，可貼到筆記軟體。')}
   catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download='爭點本.md';a.click()}
 };
-$('#key').value=ls.get('oc_key','');$('#model').value=ls.get('oc_model','');
-$('#save').onclick=()=>{ls.set('oc_key',$('#key').value.trim());ls.set('oc_model',$('#model').value.trim());$('#saved').textContent='已儲存'};
+$('#key').value=ls.get('oc_key','');
+(function(){const m=ls.get('oc_model','')||'gemini-3.8-flash',sel=$('#msel');const has=!!m&&[...sel.options].some(o=>o.value===m);sel.value=has?m:'';$('#model').value=has?'':m;$('#model').classList.toggle('hide',has);$('#think').value=ls.get('oc_think','')})();
+$('#msel').onchange=()=>$('#model').classList.toggle('hide',$('#msel').value!=='');
+$('#save').onclick=()=>{ls.set('oc_key',$('#key').value.trim());ls.set('oc_model',$('#msel').value||$('#model').value.trim());ls.set('oc_think',$('#think').value);$('#saved').textContent='已儲存'};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['learn','book','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
