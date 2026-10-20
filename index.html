@@ -47,6 +47,10 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 #dock{position:fixed;left:0;right:0;bottom:var(--nh,56px);z-index:30;background:var(--card);border-top:1px solid var(--bd);box-shadow:0 -4px 14px rgba(0,0,0,.12);padding:8px 14px}
 #dock.hide{display:none}
 #dock .dk{max-width:720px;margin:0 auto}
+#qbox{display:flex;gap:8px;align-items:flex-start;border-left:3px solid var(--acc);background:var(--me);border-radius:6px;padding:8px 10px;margin-bottom:8px}
+#qbox.hide{display:none}
+#qbox .qtx{flex:1;min-width:0;font-size:14px;color:var(--mut);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#qbox button{background:none;border:0;color:var(--mut);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -64,12 +68,13 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
     </div>
     <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
    </div>
-  </details>
   <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。長按訊息框可複選，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、存成筆記、AI製作筆記、重整）。要開新聊天請按下方按鈕列右邊的「⋯」。存入時會讓你選資料夾（會記住上次的選擇）。聊天會自動存在這台裝置，重新整理也不會消失。</p>
+  </details>
   <details id="hist"><summary>聊天紀錄（<span id="hcnt">0</span>）</summary><div id="hlist" style="margin-top:8px"></div></details>
  </div>
  <div id="chat"></div>
  <div class="card">
+  <div id="qbox" class="hide"><div class="qtx" id="qtx"></div><button id="qx" aria-label="取消引用">✕</button></div>
   <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得地球應該是平的，因為..."></textarea>
   <div class="mut" id="status" style="margin-top:8px"></div>
  </div>
@@ -142,7 +147,7 @@ const clean=a=>[...new Set((a||[]).map(k=>String(k).replace(/^#/,'').trim()).fil
 const jparse=r=>{r=r.replace(/```json|```/g,'');const a=r.indexOf('{'),b=r.lastIndexOf('}');return JSON.parse(a>=0&&b>a?r.slice(a,b+1):r.trim())};
 const errH=e=>'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>';
 const kt=a=>(a||[]).map(w=>'<span class="tag" data-a="tag" data-i="'+esc(w)+'" style="cursor:pointer">#'+esc(tex(w))+'</span>').join('');
-let S={hist:[],thumb:null,busy:false,start:0,pend:null,mode:'q',sel:new Set(),cid:null,cm:false},V={n:'',e:''},ED=null,AP=null,MD=null;
+let S={hist:[],thumb:null,busy:false,start:0,pend:null,mode:'q',sel:new Set(),cid:null,cm:false,qt:''},V={n:'',e:''},ED=null,AP=null,MD=null;
 
 /* ===== 舊資料搬移 ===== */
 function migrate(){
@@ -355,8 +360,8 @@ async function pick(f){
 $('#mode').onchange=()=>{S.mode=$('#mode').value;cfgSum()};
 $('#more').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('hide')};
 document.addEventListener('click',e=>{if(!e.target.closest('.mw'))$('#menu').classList.add('hide')});
-$('#reset').onclick=()=>{$('#menu').classList.add('hide');if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();$('#status').textContent='';render();drawHist()};
-$('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();saveChat();ask()};
+$('#reset').onclick=()=>{clearQuote();$('#menu').classList.add('hide');if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();$('#status').textContent='';render();drawHist()};
+$('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;const qt=S.qt?S.qt.split('\n').map(l=>'> '+l).join('\n')+'\n\n':'';clearQuote();$('#q').value='';S.hist.push({role:'user',parts:[{text:qt+t}]});render();saveChat();ask()};
 
 /* ===== 聊天紀錄（只存在這台裝置，不同步） ===== */
 const chats=()=>J('oc_chats',[]);
@@ -452,11 +457,11 @@ function regen(i){
 }
 function quote(i){
   let t=tex(txt(S.hist[i])).trim();if(t.length>500)t=t.slice(0,500)+'…';
-  const q=$('#q');
-  q.value=(q.value?q.value.replace(/\s+$/,'')+'\n':'')+t.split('\n').map(l=>'> '+l).join('\n')+'\n\n';
-  q.focus();q.setSelectionRange(q.value.length,q.value.length);
-  q.scrollIntoView({behavior:'smooth',block:'center'});
+  S.qt=t;$('#qtx').textContent=t;$('#qbox').classList.remove('hide');
+  $('#q').focus();
 }
+function clearQuote(){S.qt='';$('#qtx').textContent='';$('#qbox').classList.add('hide')}
+$('#qx').onclick=clearQuote;
 const who=h=>h.role==='model'?'AI':'我';
 const bodyOf=ix=>ix.length===1?tex(txt(S.hist[ix[0]])):ix.map(i=>who(S.hist[i])+'：'+tex(txt(S.hist[i]))).join('\n\n');
 function thumbOf(ix){
