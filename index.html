@@ -15,7 +15,7 @@ nav button{flex:1;padding:14px 0;font-size:15px;background:none;border:0;color:v
 nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:0 0 12px}
 button.b,label.b{display:inline-block;background:var(--acc);color:var(--on);border:0;border-radius:8px;padding:13px 18px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
-button.g{background:none;color:var(--acc);border:1px solid var(--acc)}
+button.g,label.g{background:none;color:var(--acc);border:1px solid var(--acc)}
 button.b.sm{padding:6px 12px;font-size:14px}
 button:disabled{opacity:.5}
 input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
@@ -47,23 +47,24 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <div style="margin-top:10px">
     <div class="row" style="margin-bottom:10px"><select id="api" style="flex:1;min-width:0"></select></div>
     <div class="row" style="margin-bottom:10px">
-     <input id="lmodel" list="mlist" placeholder="模型名稱" style="flex:1;min-width:0" autocomplete="off">
-     <datalist id="mlist"></datalist>
+     <select id="msel" style="flex:1;min-width:0"></select>
+     <input id="lmodel" placeholder="輸入模型名稱" class="hide" style="flex:1;min-width:0" autocomplete="off">
      <span id="thinkwrap" class="row" style="gap:6px;flex-wrap:nowrap"><span class="mut">思考</span><select id="think" style="width:auto"><option value="">預設</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></span>
     </div>
     <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
    </div>
   </details>
   <div class="row" style="margin-top:12px">
-   <label class="b">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
-   <label class="b">選圖<input id="file" type="file" accept="image/*" hidden></label>
+   <label class="b g">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
+   <label class="b g">選圖<input id="file" type="file" accept="image/*" hidden></label>
    <button class="b g" id="reset">新聊天</button>
   </div>
-  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。長按訊息框可複選，再按下方「存成筆記」（原文存入）或「AI製作筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、存成筆記、AI製作筆記、重整）。存入時會讓你選資料夾（會記住上次的選擇）。</p>
+  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。長按訊息框可複選，再按下方「存成筆記」（原文存入）或「AI製作筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、存成筆記、AI製作筆記、重整）。存入時會讓你選資料夾（會記住上次的選擇）。聊天會自動存在這台裝置，重新整理也不會消失。</p>
+  <details id="hist"><summary>聊天紀錄（<span id="hcnt">0</span>）</summary><div id="hlist" style="margin-top:8px"></div></details>
  </div>
  <div id="chat"></div>
  <div class="card">
-  <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得地球應該平的！！"></textarea>
+  <textarea id="q" rows="3" placeholder="說出你的想法或疑問，例如：我覺得這裡應該是 SN1，因為…"></textarea>
   <div class="row hide" id="selbar" style="margin-top:8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button></div>
   <div class="row" style="margin-top:8px"><button class="b" id="send">送出</button><button class="b g" id="sum">存成筆記</button><button class="b g" id="aib">AI製作筆記</button></div>
   <div class="mut" id="status" style="margin-top:8px"></div>
@@ -117,7 +118,7 @@ const clean=a=>[...new Set((a||[]).map(k=>String(k).replace(/^#/,'').trim()).fil
 const jparse=r=>{r=r.replace(/```json|```/g,'');const a=r.indexOf('{'),b=r.lastIndexOf('}');return JSON.parse(a>=0&&b>a?r.slice(a,b+1):r.trim())};
 const errH=e=>'<span class="err">'+esc(e.message.includes('JSON')?'AI 回傳格式有誤，請再按一次':e.message)+'</span>';
 const kt=a=>(a||[]).map(w=>'<span class="tag" data-a="tag" data-i="'+esc(w)+'" style="cursor:pointer">#'+esc(tex(w))+'</span>').join('');
-let S={hist:[],thumb:null,busy:false,start:0,pend:null,mode:'q',sel:new Set()},V={n:'',e:''},ED=null,AP=null,MD=null;
+let S={hist:[],thumb:null,busy:false,start:0,pend:null,mode:'q',sel:new Set(),cid:null,cm:false},V={n:'',e:''},ED=null,AP=null,MD=null;
 
 /* ===== 舊資料搬移 ===== */
 function migrate(){
@@ -296,20 +297,56 @@ async function ask(){
     await gen(S.hist.slice(0,idx),S.mode==='o'?SYSO:SYS,{on:(t,h)=>{S.hist[idx].parts[0].text=t;th=h;render()}});
     clearInterval(iv);busy(false,'');
   }catch(e){clearInterval(iv);S.hist.pop();S.sel.delete(idx);busy(false,errH(e))}
-  render();
+  render();saveChat();
 }
 async function pick(f){
   if(!f||S.busy)return;
   const o=S.mode==='o';
-  const url=await shrink(f,1500,.85);S.thumb=await shrink(f,o?520:160,o?.6:.7);
+  const url=await shrink(f,1100,.75);S.thumb=await shrink(f,o?520:160,o?.6:.7);
   S.start=S.hist.length;S.pend=null;
   S.hist.push({role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:o?'請整理這張圖裡的優惠。':'請解析這張圖。'}]});
-  render();ask();
+  render();saveChat();ask();
 }
 ['file','cam'].forEach(id=>$('#'+id).onchange=e=>{pick(e.target.files[0]);e.target.value=''});
 $('#mode').onchange=()=>{S.mode=$('#mode').value;cfgSum()};
-$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;S.start=0;S.pend=null;S.sel.clear();$('#status').textContent='';render()};
-$('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();ask()};
+$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();$('#status').textContent='';render();drawHist()};
+$('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();saveChat();ask()};
+
+/* ===== 聊天紀錄（只存在這台裝置，不同步） ===== */
+const chats=()=>J('oc_chats',[]);
+function chatTitle(){
+  const u=S.hist.find(h=>h.role==='user'&&txt(h)&&!/^請(解析|整理)這張圖/.test(txt(h)));
+  let t=u?txt(u):'';
+  if(!t){const m=S.hist.find(h=>h.role==='model'&&txt(h));t=m?txt(m):''}
+  t=tex(t).replace(/\s+/g,' ').trim().slice(0,24);
+  return (S.hist.some(h=>h.parts.some(p=>p.inline_data))?'🖼 ':'')+(t||'新聊天');
+}
+function saveChat(){
+  if(!S.hist.length)return;
+  if(!S.cid)S.cid=uid();
+  const rec={id:S.cid,ts:Date.now(),title:chatTitle(),mode:S.mode,start:S.start,thumb:S.thumb,hist:S.hist};
+  const a=[rec,...chats().filter(x=>x.id!==S.cid)].slice(0,50);
+  while(!sv('oc_chats',a)&&a.length>1)a.pop();
+  drawHist();
+}
+function drawHist(){
+  const a=chats();
+  $('#hcnt').textContent=a.length;
+  $('#hlist').innerHTML=a.length?a.map(c=>'<div class="row" style="justify-content:space-between;flex-wrap:nowrap;margin:8px 0"><span data-h="open" data-i="'+c.id+'" style="flex:1;min-width:0;cursor:pointer"><b>'+(c.id===S.cid?'✓ ':'')+esc(c.title)+'</b><br><span class="mut">'+esc(new Date(c.ts).toLocaleString('zh-TW'))+'・'+c.hist.length+' 則</span></span><button class="b g" style="padding:6px 12px" data-h="del" data-i="'+c.id+'">刪除</button></div>').join('')+'<button class="b g sm" data-h="clr">清空全部紀錄</button>':'<p class="mut" style="margin:0">還沒有聊天紀錄。</p>';
+}
+function loadChat(id,quiet){
+  const c=chats().find(x=>x.id===id);if(!c)return;
+  if(S.busy){$('#status').textContent='AI 回應中，請稍候，或先按「新聊天」中止。';return}
+  S.cid=c.id;S.hist=c.hist;S.start=c.start||0;S.thumb=c.thumb||null;S.mode=c.mode||'q';$('#mode').value=S.mode;S.pend=null;S.sel.clear();$('#status').textContent='';
+  cfgSum();render(quiet);drawHist();
+}
+$('#hlist').onclick=e=>{
+  const t=e.target.closest('[data-h]');if(!t)return;
+  const a=t.dataset.h,i=t.dataset.i;
+  if(a==='open'){loadChat(i);if(!S.busy){$('#hist').open=false;window.scrollTo(0,document.body.scrollHeight)}}
+  else if(a==='del'){if(!confirm('刪除這個聊天紀錄？'))return;sv('oc_chats',chats().filter(x=>x.id!==i));if(i===S.cid)S.cid=null;drawHist()}
+  else if(a==='clr'){if(!confirm('清空全部聊天紀錄？無法復原。'))return;sv('oc_chats',[]);S.cid=null;drawHist()}
+};
 
 /* ===== 訊息選取（長按複選） ===== */
 const selIdx=()=>[...S.sel].filter(i=>S.hist[i]&&txt(S.hist[i])).sort((a,b)=>a-b);
@@ -364,7 +401,7 @@ function regen(i){
   S.hist=S.hist.slice(0,cut);
   S.sel=new Set([...S.sel].filter(x=>x<cut));
   S.start=Math.min(S.start,S.hist.length);
-  render();
+  render();saveChat();
   if(S.hist.length&&S.hist[S.hist.length-1].role==='user')ask();
 }
 function quote(i){
@@ -538,18 +575,23 @@ function fillApis(){
   const a=apis(),c=cur();
   $('#api').innerHTML=a.length?a.map(x=>'<option value="'+x.id+'">'+esc(label(x))+'</option>').join(''):'<option value="">尚未新增 API（到設定新增）</option>';
   if(c)$('#api').value=c.id;
-  $('#lmodel').value=c?c.model:'';$('#lmodel').disabled=!c;
-  $('#mlist').innerHTML=c?P[c.p].m.map(x=>'<option value="'+x+'">').join(''):'';
+  const ml=c?P[c.p].m:[],cm=c?(c.model||''):'';
+  const noList=!ml.length,custom=S.cm&&!noList;
+  $('#lmodel').value=cm;$('#lmodel').disabled=!c;
+  $('#msel').classList.toggle('hide',noList);
+  $('#msel').innerHTML=ml.map(x=>'<option value="'+esc(x)+'"'+(!custom&&x===cm?' selected':'')+'>'+esc(x)+'</option>').join('')+(cm&&!ml.includes(cm)&&!custom?'<option value="'+esc(cm)+'" selected>'+esc(cm)+'</option>':'')+'<option value="__c"'+(custom?' selected':'')+'>自訂模型名稱…</option>';
+  $('#lmodel').classList.toggle('hide',!(noList||custom));
   $('#thinkwrap').classList.toggle('hide',!(c&&c.p==='gemini'));
   $('#think').value=ls.get('oc_think','low');
   $('#uselist').innerHTML=a.length?a.map(x=>'<label style="display:flex;gap:10px;align-items:center;margin:8px 0"><input type="radio" name="useapi" value="'+x.id+'" style="width:22px;flex:none"'+(c&&c.id===x.id?' checked':'')+'><span><span class="tag" style="color:var(--acc);border-color:var(--acc)">'+esc(P[x.p].n)+'</span><b>'+esc(x.name||'未命名')+'</b><br><span class="mut">金鑰 …'+esc(x.key.slice(-4))+'｜模型 '+esc(x.model||'未設定')+'</span></span></label>').join(''):'<p class="mut">還沒有 API，請按下方「管理 API」新增。</p>';
   $('#managelist').innerHTML=a.length?a.map(x=>'<div class="row" style="justify-content:space-between;margin:8px 0"><span><b>'+esc(P[x.p].n)+'</b>'+(x.name?' · '+esc(x.name):'')+' <span class="mut">…'+esc(x.key.slice(-4))+'</span></span><button class="b g" style="padding:6px 12px" data-rm="'+x.id+'">移除</button></div>').join(''):'<p class="mut">沒有可管理的 API。</p>';
   cfgSum();
 }
-function setAct(id){ls.set('oc_act',id);fillApis()}
+function setAct(id){S.cm=false;ls.set('oc_act',id);fillApis()}
 $('#api').onchange=()=>setAct($('#api').value);
 $('#uselist').onchange=e=>{if(e.target.name==='useapi')setAct(e.target.value)};
-$('#lmodel').onchange=()=>{const a=apis(),c=cur();if(!c)return;a.find(y=>y.id===c.id).model=$('#lmodel').value.trim();saveApis(a);fillApis()};
+$('#lmodel').onchange=()=>{const a=apis(),c=cur();if(!c)return;a.find(y=>y.id===c.id).model=$('#lmodel').value.trim();saveApis(a);S.cm=false;fillApis()};
+$('#msel').onchange=()=>{const v=$('#msel').value;if(v==='__c'){S.cm=true;fillApis();$('#lmodel').focus();return}S.cm=false;const a=apis(),c=cur();if(!c)return;a.find(y=>y.id===c.id).model=v;saveApis(a);fillApis()};
 $('#think').onchange=()=>ls.set('oc_think',$('#think').value);
 $('#managelist').onclick=e=>{
   const id=e.target.dataset.rm;if(!id)return;
@@ -654,6 +696,7 @@ $('#gdown').onclick=async()=>{
 };
 $('#gtok').value=ls.get('oc_gh_tok','');$('#gpw').value=ls.get('oc_gh_pw','');
 migrate();$('#nprov').onchange();fillApis();draw('n');draw('e');autoSync();
+{const L0=chats()[0];if(L0)loadChat(L0.id,true);else drawHist()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['learn','n','e','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
