@@ -36,9 +36,9 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <section id="p-learn">
  <div class="card">
   <div class="row">
-   <label class="b">拍照<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
-   <label class="b g" style="background:none;color:var(--acc);border:1px solid var(--acc)">選圖<input id="file2" type="file" accept="image/*" hidden></label>
-   <button class="b g" id="reset">新的一題</button>
+   <label class="b">拍照或選圖<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+   <label class="b g" style="background:none;color:var(--acc);border:1px solid var(--acc)">從相簿選<input id="file2" type="file" accept="image/*" hidden></label>
+   <button class="b g" id="reset">新的一題 / 取消</button>
   </div>
   <p class="mut" id="hint">拍下結構式、反應機構或題目。AI 會先說明它看到了什麼，請你確認有沒有看錯。</p>
  </div>
@@ -137,38 +137,47 @@ async function stream(contents,system,on){
   if(!k)throw new Error('請先到「設定」輸入 API 金鑰');
   const m=ls.get('oc_model','')||'gemini-3.8-flash';
   const body={contents,systemInstruction:{parts:[{text:system}]}};
-  const th=ls.get('oc_think','');
-  if(th)body.generationConfig={thinkingConfig:{thinkingLevel:th}};
-  let r;
-  try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
-  catch(e){throw new Error('連線失敗，請檢查網路')}
-  if(!r.ok){
-    const d=await r.json().catch(()=>({}));
-    if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型。');
-    if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
-    throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+(th&&r.status===400?'（若與思考程度有關，請到設定改回「預設」）':''));
-  }
-  const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='';
-  for(;;){
-    const {done,value}=await rd.read();if(done)break;
-    buf+=dec.decode(value,{stream:true});
-    const lines=buf.split('\n');buf=lines.pop();
-    for(const ln of lines){
-      if(!ln.startsWith('data:'))continue;
-      try{const j=JSON.parse(ln.slice(5));const ps=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts;
-        if(ps){full+=ps.filter(x=>!x.thought).map(x=>x.text||'').join('');on(full)}}catch(e){}
+  const th=ls.get('oc_think','low');
+  body.generationConfig={thinkingConfig:Object.assign({includeThoughts:true},th?{thinkingLevel:th}:{})};
+  const ctl=new AbortController();S.ctl=ctl;
+  let got=false;const wd=setTimeout(()=>{if(!got)ctl.abort('stall')},90000);
+  try{
+    let r;
+    try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m)+':streamGenerateContent?alt=sse',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify(body)})}
+    catch(e){throw new Error(ctl.signal.reason==='stall'?'超過 90 秒沒有回應。請到設定把思考程度改成「低」，或換成 Flash Lite 模型。':ctl.signal.aborted?'已取消':'連線失敗，請檢查網路')}
+    if(!r.ok){
+      const d=await r.json().catch(()=>({}));
+      if(r.status===404)throw new Error('找不到這個模型，請到設定換一個模型。');
+      if(r.status===429)throw new Error('額度用完（429）。請稍後再試，或到設定換一個模型。');
+      throw new Error(((d.error&&d.error.message)||('錯誤 '+r.status))+'（若與思考設定有關，請到設定把思考程度改成「預設」）');
     }
-  }
-  if(!full)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
-  return full;
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='',thought='';
+    try{
+    for(;;){
+      const {done,value}=await rd.read();if(done)break;
+      got=true;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const ln of lines){
+        if(!ln.startsWith('data:'))continue;
+        try{const j=JSON.parse(ln.slice(5));const ps=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts;
+          if(ps){ps.forEach(x=>{if(x.thought)thought+=x.text||'';else full+=x.text||''});on(full,thought)}}catch(e){}
+      }
+    }
+    }catch(e){if(ctl.signal.aborted)throw new Error(ctl.signal.reason==='stall'?'回應中斷':'已取消');throw e}
+    if(!full)throw new Error('模型沒有回應內容（可能被安全機制擋下），請換個說法或換張圖');
+    return full;
+  }finally{clearTimeout(wd)}
 }
 async function ask(){
-  busy(true,'AI 思考中…（開始回答後會即時顯示）');
+  const t0=Date.now();let th='';
+  const tick=()=>{const sec=Math.round((Date.now()-t0)/1000);const sn=th?'<br><span class="mut">'+esc(th.slice(-100).replace(/\s+/g,' '))+'</span>':'';$('#status').innerHTML='AI 運作中… 已等待 '+sec+' 秒'+sn};
+  busy(true,'');tick();const iv=setInterval(tick,1000);
   S.hist.push({role:'model',parts:[{text:''}]});const idx=S.hist.length-1;
   try{
-    await stream(S.hist.slice(0,idx),SYS,t=>{S.hist[idx].parts[0].text=t;$('#status').textContent='AI 回答中…';render()});
-    busy(false,'');
-  }catch(e){S.hist.pop();busy(false,'<span class="err">'+esc(e.message)+'</span>')}
+    await stream(S.hist.slice(0,idx),SYS,(t,h)=>{S.hist[idx].parts[0].text=t;th=h;render()});
+    clearInterval(iv);busy(false,'');
+  }catch(e){clearInterval(iv);S.hist.pop();busy(false,'<span class="err">'+esc(e.message)+'</span>')}
   render();
 }
 async function pick(f){
@@ -179,7 +188,7 @@ async function pick(f){
 }
 $('#file').onchange=e=>pick(e.target.files[0]);
 $('#file2').onchange=e=>pick(e.target.files[0]);
-$('#reset').onclick=()=>{S.hist=[];S.thumb=null;$('#hint').textContent='拍下結構式、反應機構或題目。AI 會先說明它看到了什麼，請你確認有沒有看錯。';$('#status').textContent='';render()};
+$('#reset').onclick=()=>{if(S.ctl)S.ctl.abort('user');S.hist=[];S.thumb=null;$('#hint').textContent='拍下結構式、反應機構或題目。AI 會先說明它看到了什麼，請你確認有沒有看錯。';$('#status').textContent='';render()};
 $('#send').onclick=()=>{const t=$('#q').value.trim();if(!t||S.busy)return;$('#q').value='';S.hist.push({role:'user',parts:[{text:t}]});render();ask()};
 $('#sum').onclick=async()=>{
   if(S.busy||S.hist.length<2)return;
@@ -214,7 +223,7 @@ $('#exp').onclick=async()=>{
   catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download='爭點本.md';a.click()}
 };
 $('#key').value=ls.get('oc_key','');
-(function(){const m=ls.get('oc_model','')||'gemini-3.8-flash',sel=$('#msel');const has=!!m&&[...sel.options].some(o=>o.value===m);sel.value=has?m:'';$('#model').value=has?'':m;$('#model').classList.toggle('hide',has);$('#think').value=ls.get('oc_think','')})();
+(function(){const m=ls.get('oc_model','')||'gemini-3.8-flash',sel=$('#msel');const has=!!m&&[...sel.options].some(o=>o.value===m);sel.value=has?m:'';$('#model').value=has?'':m;$('#model').classList.toggle('hide',has);$('#think').value=ls.get('oc_think','low')})();
 $('#msel').onchange=()=>$('#model').classList.toggle('hide',$('#msel').value!=='');
 $('#save').onclick=()=>{ls.set('oc_key',$('#key').value.trim());ls.set('oc_model',$('#msel').value||$('#model').value.trim());ls.set('oc_think',$('#think').value);$('#saved').textContent='已儲存'};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
