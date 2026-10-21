@@ -614,7 +614,7 @@ $('#mdl').onchange=e=>{
 /* ===== 筆記本／精華（共用） ===== */
 const TT={n:'筆記本',e:'精華'};
 ['n','e'].forEach(k=>{
-  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="x">匯出</button><button class="b g sm" data-a="ax">Anki CSV</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
+  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="ax">匯出 CSV</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
   $('#s'+k).oninput=()=>draw(k);
 });
 function draw(k){
@@ -625,16 +625,17 @@ function draw(k){
   const fn=id=>(F.find(x=>x.id===id)||{name:'?'}).name;
   const qs=q.split(/[\s,，、#]+/).filter(Boolean);
   const hit=n=>{const h=(tex(n.title)+' '+tex(n.body)+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase();return qs.every(w=>h.includes(w))};
-  const fc=f=>'<div class="card hd" data-a="of" data-i="'+f.id+'" style="cursor:pointer"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div>';
-  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+(n.ai?' <span class="tag">AI摘要</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.file?FB(n):'')+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
-  const bar='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
+  const fc=f=>'<div class="card" style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-f="'+f.id+'" style="width:22px;flex:none"><div data-a="of" data-i="'+f.id+'" style="flex:1;min-width:0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div></div>';
+  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+(n.ai?' <span class="tag">AI摘要</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.file?FB(n):'')+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯內容</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
+  const mg='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="rn">改名</button> <button class="b g sm" data-a="dl">刪除</button>';
+  const bar=mg+' <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
   let h,d;
   if(fid){
-    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button><span><button class="b g sm" data-a="rf">改名</button> <button class="b g sm" data-a="df">刪除</button></span></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label>'+bar+'</div>';
+    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label>'+bar+'</div>';
     const r=N.filter(n=>n.fid===fid&&hit(n));
     d=list(r)+(q&&!r.length?'<button class="b g sm" data-a="gs">改搜全部資料夾</button>':'');
   }else if(!q){
-    h='<div class="hd"><span class="mut">資料夾（科目）</span><button class="b g sm" data-a="nf">＋新資料夾</button></div>';
+    h='<div class="hd"><span class="mut">資料夾（科目）</span><button class="b g sm" data-a="nf">＋新資料夾</button></div>'+(F.length?'<div class="row" style="margin-bottom:10px">'+mg+'</div>':'');
     d=F.length?F.map(fc).join(''):'<p class="mut">還沒有資料夾。按「＋新資料夾」建立科目，例如：英文、數學、優惠。也可以在「學習」頁存筆記時直接新增。</p>';
   }else{
     h='<div class="hd"><span class="mut">搜尋結果（所有資料夾）</span><span>'+bar+'</span></div>';
@@ -668,11 +669,6 @@ async function zoomImg(nid){
   if(!src){closeMdl();return}
   openMdl('<div class="row" style="margin-bottom:8px"><button class="b g sm" id="zt">放大</button><button class="b sm" id="mcx">關閉</button><span class="mut">'+(full?'原圖':'只有縮圖（舊筆記，或原圖不在這台裝置）')+'</span></div><div style="overflow:auto;max-height:72vh;border-radius:8px"><img id="zimg" src="'+src+'" style="display:block;width:100%;max-width:none"></div>');
 }
-async function out(md,name){
-  if(!md.trim()){alert('沒有可匯出的內容');return}
-  try{await navigator.clipboard.writeText(md);alert('已複製為 Markdown，可貼到筆記軟體。')}
-  catch(e){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download=name;a.click()}
-}
 ['n','e'].forEach(k=>$('#p-'+k).onclick=e=>{
   const t=e.target.closest('[data-a]');if(!t)return;
   const a=t.dataset.a,i=t.dataset.i,s=$('#s'+k);
@@ -680,13 +676,27 @@ async function out(md,name){
   else if(a==='up'){V[k]='';draw(k)}
   else if(a==='tag'){V[k]='';s.value='#'+i;draw(k)}
   else if(a==='nf'){const n=(prompt('資料夾名稱')||'').trim();if(n){sv('oc_fold',[...folds(),{id:uid(),name:n,k}]);draw(k)}}
-  else if(a==='rf'){const f=folds().find(x=>x.id===V[k]),n=(prompt('新名稱',f.name)||'').trim();if(n){sv('oc_fold',folds().map(x=>x.id===f.id?{...x,name:n}:x));draw(k)}}
-  else if(a==='df'){const f=folds().find(x=>x.id===V[k]),c=notes().filter(x=>x.fid===f.id).length;if(confirm('刪除資料夾「'+f.name+'」與裡面的 '+c+' 則筆記？無法復原。')){sv('oc_notes',notes().filter(x=>x.fid!==f.id));sv('oc_fold',folds().filter(x=>x.id!==f.id));gcAll();V[k]='';draw(k)}}
+  else if(a==='rn'){
+    const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+    if(cf.length+cn.length!==1){alert('請先勾選 1 個項目再改名（目前勾選 '+(cf.length+cn.length)+' 個）');return}
+    if(cf.length){const f=folds().find(x=>x.id===cf[0]),n=(prompt('資料夾新名稱',f.name)||'').trim();if(n){sv('oc_fold',folds().map(x=>x.id===f.id?{...x,name:n}:x));draw(k)}}
+    else{const o=notes().find(x=>x.id===cn[0]),n=(prompt('筆記新標題',tex(o.title))||'').trim();if(n){sv('oc_notes',notes().map(x=>x.id===o.id?{...x,title:n}:x));draw(k)}}
+  }
+  else if(a==='dl'){
+    const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+    if(!cf.length&&!cn.length){alert('請先勾選要刪除的項目');return}
+    const inF=notes().filter(x=>cf.includes(x.fid)).length,extra=cn.filter(id=>{const x=notes().find(y=>y.id===id);return x&&!cf.includes(x.fid)}).length;
+    const msg=(cf.length?'資料夾 '+cf.length+' 個（含裡面的 '+inF+' 則筆記）':'')+(cf.length&&extra?'、':'')+(extra?'筆記 '+extra+' 則':'');
+    if(confirm('確定刪除 '+msg+'？無法復原。')){
+      sv('oc_notes',notes().filter(x=>!cf.includes(x.fid)&&!cn.includes(x.id)));
+      if(cf.length)sv('oc_fold',folds().filter(x=>!cf.includes(x.id)));
+      gcAll();if(cf.includes(V[k]))V[k]='';draw(k);
+    }
+  }
   else if(a==='zoom')zoomImg(i);
   else if(a==='nn')openEd(k,null);
   else if(a==='en')openEd(k,i);
-  else if(a==='dn'){if(confirm('確定刪除這則筆記？')){sv('oc_notes',notes().filter(x=>x.id!==i));gcAll();draw(k)}}
-  else if(a==='sa'){const cs=[...document.querySelectorAll('#p-'+k+' [data-c]')],all=cs.length&&cs.every(c=>c.checked);cs.forEach(c=>c.checked=!all);t.textContent=all?'全選':'取消全選'}
+  else if(a==='sa'){const cs=[...document.querySelectorAll('#p-'+k+' [data-c],#p-'+k+' [data-f]')],all=cs.length&&cs.every(c=>c.checked);cs.forEach(c=>c.checked=!all);t.textContent=all?'全選':'取消全選'}
   else if(a==='ai')aiMerge(k);
   else if(a==='ac'){AP=null;$('#ap'+k).innerHTML=''}
   else if(a==='ec'){ED=null;$('#ed'+k).innerHTML=''}
@@ -710,10 +720,6 @@ async function out(md,name){
   else if(a==='fo')openFile(i);
   else if(a==='eai'){const g=n=>$('#ed'+k+' [name='+n+']');aiTK(g('t'),g('k'),g('b'),t)}
   else if(a==='ax')ankiOut(k);
-  else if(a==='x'){
-    const md=folds().filter(f=>f.k===k).map(f=>'# '+f.name+'\n\n'+notes().filter(n=>n.k===k&&n.fid===f.id).map(n=>'## '+n.title+'\n'+(n.kws||[]).map(w=>'#'+w).join(' ')+'\n\n'+n.body+'\n').join('\n')).join('\n');
-    out(tex(md),TT[k]+'.md');
-  }
 });
 
 /* ===== 檢索／AI 標題關鍵字／檔案上傳／Anki CSV ===== */
@@ -789,10 +795,11 @@ async function openFile(id){
 }));
 function ankiOut(k){
   const ch=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+  const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f);
   let a=notes().filter(n=>n.k===k);
-  if(ch.length)a=a.filter(n=>ch.includes(n.id));else if(V[k])a=a.filter(n=>n.fid===V[k]);
+  if(ch.length||cf.length)a=a.filter(n=>ch.includes(n.id)||cf.includes(n.fid));else if(V[k])a=a.filter(n=>n.fid===V[k]);
   a=a.filter(n=>n.body||!n.file);
-  if(!a.length){alert('沒有可匯出的筆記（可先勾選，或進入資料夾）');return}
+  if(!a.length){alert('沒有可匯出的筆記（可先勾選資料夾或筆記，或進入資料夾）');return}
   const F=folds(),h=s=>esc(tex(s)).replace(/\n/g,'<br>'),q=s=>'"'+s.replace(/"/g,'""')+'"';
   const rows=a.map(n=>[h(n.title),h(n.body),(n.kws||[]).map(w=>tex(w).replace(/\s+/g,'_')).join(' '),((F.find(f=>f.id===n.fid)||{}).name||'未分類').replace(/"/g,'')].map(q).join(','));
   const csv='#separator:comma\n#html:true\n#tags column:3\n#deck column:4\n'+rows.join('\n');
