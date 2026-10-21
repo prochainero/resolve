@@ -112,13 +112,11 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <p class="mut" style="margin-top:0">先到 Google Cloud Console：建立專案、啟用 Drive API、設定 OAuth 同意畫面（把自己加為測試使用者），再建立「網頁應用程式」的 OAuth 用戶端 ID，「已授權的 JavaScript 來源」填這個網頁的網址（只填到網域，不含路徑），把用戶端 ID 貼在下面。資料與圖片不加密，直接存在 Drive 的隱藏資料夾（Drive 介面看不到，只有這個網頁的授權能讀）；不需要同步密碼。舊版加密的資料仍可下載（需填同步密碼）。授權約 1 小時有效，過期請再按一次。</p>
    <input id="gdcid" style="-webkit-text-security:disc;text-security:disc" placeholder="OAuth 用戶端 ID（xxx.apps.googleusercontent.com）" autocomplete="off">
    <div class="mut" id="gdcur" style="margin-top:8px;word-break:break-all"></div>
-   <div class="row" style="margin-top:8px;flex-wrap:nowrap"><select id="gdsel" style="flex:1;min-width:0"></select><button class="b g" id="gdsave">存成選項</button><button class="b g" id="gdrm">移除</button></div>
+   <select id="gddest" style="margin-top:8px"><option value="a"></option></select>
    <div class="row" style="margin-top:12px"><button class="b" id="gdup">上傳到 Drive</button><button class="b g" id="gddown">從 Drive 下載</button><button class="b g" id="gdspb">查看空間</button></div>
    <div class="mut" id="gdsp" style="margin-top:8px"></div>
    <div class="mut" style="margin:14px 0 4px">多帳號分流：A 滿了時，新圖片改存到其他帳號（B、C、D…）的 Drive 並自動分享給 A；A 授權一次就能讀到所有帳號。</div>
-   <label style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" id="gdben" style="width:22px;flex:none"><span>啟用多帳號分流（授權 A 時會多要「唯讀 Drive」權限）</span></label>
    <label style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" id="gdauto" style="width:22px;flex:none" checked><span>改完筆記自動上傳到 Drive（授權有效時；有儲存帳號就優先存到儲存帳號）</span></label>
-   <select id="gddest"><option value="a">檔案存到 A（預設）</option></select>
    <div class="row" style="margin-top:8px"><button class="b g" id="gdblogin">新增／登入儲存帳號</button><button class="b g" id="gdbclr">移除所選儲存帳號</button><button class="b g" id="gdclean">清理沒在用的圖片</button></div>
    <div class="mut" id="gdbst" style="margin-top:8px"></div>
    <div class="mut" id="gdstat" style="margin-top:8px"></div>
@@ -158,7 +156,10 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 /* © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 */
 const $=s=>document.querySelector(s);
 const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_gd_amail'];
-const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
+/* 預設 Google 用戶端 ID：填在下面引號內，無痕分頁也不用重填。也可在網址後面加 ?cid=xxx.apps.googleusercontent.com */
+const DEFAULT_CID='';
+const EFF_CID=(()=>{try{return (new URLSearchParams(location.search).get('cid')||'').trim()||DEFAULT_CID}catch(e){return DEFAULT_CID}})();
+const ls={get(k,d){try{const v=localStorage.getItem(k);if(k==='oc_gd_cid'&&!v&&EFF_CID)return EFF_CID;return v===null?d:v}catch(e){return k==='oc_gd_cid'&&EFF_CID?EFF_CID:d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const tex=t=>String(t==null?'':t).replace(/\$/g,'');
 const J=(k,d)=>{try{return JSON.parse(ls.get(k,''))||d}catch(e){return d}};
@@ -969,7 +970,8 @@ gcAll();
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
 /* ===== Google Drive 同步（加密後存到 appDataFolder，含圖片與檔案） ===== */
-const SCA=()=>'https://www.googleapis.com/auth/drive.appdata'+(ls.get('oc_gd_ben','')==='1'?' https://www.googleapis.com/auth/drive.readonly':'');
+const BEN=()=>{try{return JSON.parse(ls.get('oc_gd_accts','[]')||'[]').length>0}catch(e){return false}};
+const SCA=()=>'https://www.googleapis.com/auth/drive.appdata'+(BEN()?' https://www.googleapis.com/auth/drive.readonly':'');
 const GD={tok:'',exp:0},PW=()=>$('#gpw').value||ls.get('oc_gh_pw','');
 function gdAuth(){return new Promise((res,rej)=>{
   if(GD.tok&&Date.now()<GD.exp&&GD.cid===ls.get('oc_gd_cid','')&&GD.sc===SCA())return res(GD.tok);
@@ -982,7 +984,7 @@ function gdAuth(){return new Promise((res,rej)=>{
 const gdf=async(u,o)=>{const t=await gdAuth();const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},(o||{}).headers)}));if(!r.ok)throw new Error(r.status===401?'Google 授權已過期，請再按一次':r.status===403?'Google 拒絕存取（確認已啟用 Drive API，且你是測試使用者）':'Google Drive 錯誤 '+r.status);return r};
 const GDSZ={};
 async function gdList(){const m={};let pt='';do{const j=await(await gdf('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1000&fields=nextPageToken,files(id,name,size)'+(pt?'&pageToken='+pt:''))).json();j.files.forEach(f=>{m[f.name]=f.id;GDSZ[f.id]=+f.size||0});pt=j.nextPageToken||''}while(pt);
-  if(ls.get('oc_gd_ben','')==='1'){try{
+  if(BEN()){try{
     const fq="mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and sharedWithMe and trashed=false";
     const fj=await(await gdf(GAPI+'files?q='+encodeURIComponent(fq)+'&fields=files(id)')).json();
     for(const fo of (fj.files||[])){let p2='';do{const k=await(await gdf(GAPI+'files?q='+encodeURIComponent("'"+fo.id+"' in parents and trashed=false")+'&pageSize=1000&fields=nextPageToken,files(id,name,size)'+(p2?'&pageToken='+p2:''))).json();(k.files||[]).forEach(f=>{if(!m[f.name]){m[f.name]=f.id;GDSZ[f.id]=+f.size||0}});p2=k.nextPageToken||''}while(p2)}
@@ -1027,7 +1029,7 @@ const gdDest=()=>ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');
 async function gdUp(m,silent){
   GDBUSY=true;try{
   const ts=Date.now(),data={};SK.forEach(k=>{const v=ls.get(k,null);if(v!==null)data[k]=v});
-  let up=0,skip=0,wait=0,fb=0;const dest=gdDest(),toX=ls.get('oc_gd_ben','')==='1'&&dest!=='a'&&ACCTS().includes(dest);let xf=null;const getXf=async()=>{if(xf)return xf;const am=await mailA();if(am===dest)throw new Error('選的儲存帳號就是 A，請改選別的帳號');return xf=await gtFolder(dest,am)};
+  let up=0,skip=0,wait=0,fb=0;const dest=gdDest(),toX=dest!=='a'&&ACCTS().includes(dest);let xf=null;const getXf=async()=>{if(xf)return xf;const am=await mailA();if(am===dest)throw new Error('選的儲存帳號就是 A，請改選別的帳號');return xf=await gtFolder(dest,am)};
   PG.show('Drive：準備上傳');
   const list=[];
   for(const n of notes().filter(x=>x.iid)){
@@ -1077,11 +1079,8 @@ async function gdSpace(){const el=$('#gdsp');try{el.textContent='讀取空間…
   el.innerHTML='帳號：'+esc((a.user||{}).emailAddress||'')+'<br>本程式隱藏資料：'+fmtB(app)+'（'+cnt+' 個檔案）<br>Google 帳號總用量：'+fmtB(q.usage)+(q.limit?' / '+fmtB(q.limit)+'（剩 '+fmtB(q.limit-q.usage)+'）':'（無上限）');
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}}
 $('#gdspb').onclick=gdSpace;
-const CIDS=()=>J('oc_gd_cids',[]),ACCTS=()=>J('oc_gd_accts',[]),NAMES=()=>J('oc_gd_cnames',{}),LOC=()=>J('oc_gd_loc',{});
-function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am:'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gdben').checked=ls.get('oc_gd_ben','')==='1';$('#gddest').innerHTML='<option value="a">檔案存到 '+esc(ls.get('oc_gd_amail','')||'A 帳號（登入後顯示信箱）')+'</option>'+ACCTS().map(e=>'<option value="'+esc(e)+'">檔案優先存到 '+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}const a=CIDS(),c=ls.get('oc_gd_cid','');$('#gdsel').innerHTML='<option value="">已存的用戶端 ID（'+a.length+'）</option>'+a.map(x=>'<option value="'+esc(x)+'"'+(x===c?' selected':'')+'>'+esc(NAMES()[x]||('用戶端 #'+(a.indexOf(x)+1)))+'</option>').join('')}
-$('#gdsel').onchange=()=>{const v=$('#gdsel').value;if(v){$('#gdcid').value=v;ls.set('oc_gd_cid',v);GD.tok='';gdFill();gdmsg('已切換用戶端 ID，下次同步會重新授權')}};
-$('#gdsave').onclick=()=>{const v=$('#gdcid').value.trim();if(!/\.apps\.googleusercontent\.com$/.test(v))return gdmsg('格式不對，應為 xxx.apps.googleusercontent.com',1);const a=CIDS();if(!a.includes(v))a.push(v);const nm=prompt('幫這組取個名字，方便辨認（例如：主帳號專案），可留空',NAMES()[v]||'');if(nm!==null){const N=NAMES();if(nm.trim())N[v]=nm.trim();else delete N[v];sv('oc_gd_cnames',N)}sv('oc_gd_cids',a);ls.set('oc_gd_cid',v);gdFill();gdmsg('已儲存這組用戶端 ID')};
-$('#gdrm').onclick=()=>{const v=$('#gdsel').value;if(!v||!confirm('從清單移除這個用戶端 ID？'))return;sv('oc_gd_cids',CIDS().filter(x=>x!==v));if($('#gdcid').value.trim()===v){$('#gdcid').value='';ls.set('oc_gd_cid','')}GD.tok='';gdFill()};
+const ACCTS=()=>J('oc_gd_accts',[]),NAMES=()=>J('oc_gd_cnames',{}),LOC=()=>J('oc_gd_loc',{});
+function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am:'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gddest').innerHTML='<option value="a">'+esc(ls.get('oc_gd_amail','')||'主帳號（登入後顯示信箱）')+'</option>'+ACCTS().map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}}
 gdFill();
 const GAPI='https://www.googleapis.com/drive/v3/';
 const GT={};
@@ -1125,10 +1124,9 @@ $('#gdblogin').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());co
   const q=(await(await gtf(em,GAPI+'about?fields=storageQuota')).json()).storageQuota||{};
   gdFill();el.innerHTML='已加入 '+esc(em)+'：用量 '+fmtB(q.usage)+(q.limit?' / '+fmtB(q.limit):'')+'，已記錄既有圖片 '+c+' 個<br>'+showAccts();
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}};
-$('#gdbclr').onclick=()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst').textContent='請先在「檔案存到」選要移除的儲存帳號';return}
+$('#gdbclr').onclick=()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst').textContent='請先在上方選要移除的儲存帳號';return}
   if(!confirm('從清單移除 '+v+'？不會刪除它 Drive 裡的資料，之後清理圖片時也不會處理它。'))return;
   sv('oc_gd_accts',ACCTS().filter(x=>x!==v));delete GT[v];ls.set('oc_gd_dest','a');gdFill();$('#gdbst').innerHTML=showAccts()};
-$('#gdben').onchange=()=>{ls.set('oc_gd_ben',$('#gdben').checked?'1':'0');GD.tok='';gdmsg($('#gdben').checked?'已啟用多帳號分流，下次上傳／下載會請你重新授權 A（多一個唯讀權限）':'已關閉多帳號分流')};
 $('#gdauto').checked=ls.get('oc_gd_auto','1')==='1';$('#gdauto').onchange=()=>{ls.set('oc_gd_auto',$('#gdauto').checked?'1':'0')};
 $('#gddest').onchange=()=>{ls.set('oc_gd_dest',$('#gddest').value)};
 $('#gdclean').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
