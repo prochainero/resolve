@@ -107,6 +107,11 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <div class="row" style="margin-top:8px;flex-wrap:nowrap"><select id="gdsel" style="flex:1;min-width:0"></select><button class="b g" id="gdsave">存成選項</button><button class="b g" id="gdrm">移除</button></div>
    <div class="row" style="margin-top:12px"><button class="b" id="gdup">上傳到 Drive</button><button class="b g" id="gddown">從 Drive 下載</button><button class="b g" id="gdspb">查看空間</button></div>
    <div class="mut" id="gdsp" style="margin-top:8px"></div>
+   <div class="mut" style="margin:14px 0 4px">B 帳號分流：A 滿了時，新圖片改存到 B 的 Drive，並自動分享給 A；A 授權一次就能讀到兩邊。</div>
+   <label style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" id="gdben" style="width:22px;flex:none"><span>啟用 B 分流（授權 A 時會多要「唯讀 Drive」權限）</span></label>
+   <select id="gddest"><option value="a">新圖片存到 A（預設）</option><option value="b">新圖片存到 B（要先登入 B）</option></select>
+   <div class="row" style="margin-top:8px"><button class="b g" id="gdblogin">登入 B 帳號／查看 B 空間</button><button class="b g" id="gdbclr">更換 B 帳號</button><button class="b g" id="gdclean">清理沒在用的圖片</button></div>
+   <div class="mut" id="gdbst" style="margin-top:8px"></div>
    <div class="mut" id="gdstat" style="margin-top:8px"></div>
   </div>
   <div class="card"><p class="mut" style="margin:0">圖片與對話會送到你目前選用的服務商處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。資料存在這台裝置的瀏覽器，請開啟雲端同步或定期匯出。</p></div>
@@ -142,7 +147,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <script>
 /* © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 */
 const $=s=>document.querySelector(s);
-const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think'];
+const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail'];
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const tex=t=>String(t==null?'':t).replace(/\$/g,'');
@@ -861,11 +866,11 @@ async function push(){
 }
 function applyRemote(p){
   try{
-    SK.forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k]);else localStorage.removeItem(k)});
+    SK.forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k]);else if(!/^oc_gd_/.test(k))localStorage.removeItem(k)});
     ['oc_book','oc_ess'].forEach(k=>{if(p.data[k]!==undefined)localStorage.setItem(k,p.data[k])});
     localStorage.setItem('oc_sync',String(p.ts));localStorage.setItem('oc_mod',String(p.ts));
   }catch(e){}
-  migrate();fillApis();draw('n');draw('e');
+  migrate();fillApis();try{$('#gdcid').value=ls.get('oc_gd_cid','');gdFill()}catch(e){}draw('n');draw('e');
 }
 const hasLocal=()=>apis().length||notes().length;
 const gmsg=(t,e)=>{$('#gstat').innerHTML=e?'<span class="err">'+esc(t)+'</span>':esc(t)};
@@ -926,17 +931,24 @@ gcAll();
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
 /* ===== Google Drive 同步（加密後存到 appDataFolder，含圖片與檔案） ===== */
+const SCA=()=>'https://www.googleapis.com/auth/drive.appdata'+(ls.get('oc_gd_ben','')==='1'?' https://www.googleapis.com/auth/drive.readonly':'');
 const GD={tok:'',exp:0},PW=()=>$('#gpw').value||ls.get('oc_gh_pw','');
 function gdAuth(){return new Promise((res,rej)=>{
-  if(GD.tok&&Date.now()<GD.exp&&GD.cid===ls.get('oc_gd_cid',''))return res(GD.tok);
+  if(GD.tok&&Date.now()<GD.exp&&GD.cid===ls.get('oc_gd_cid','')&&GD.sc===SCA())return res(GD.tok);
   const cid=ls.get('oc_gd_cid','');if(!cid)return rej(new Error('請先填入 Google 用戶端 ID'));
   if(!(window.google&&google.accounts))return rej(new Error('Google 登入元件還沒載入，請確認網路後重新整理再試'));
-  google.accounts.oauth2.initTokenClient({client_id:cid,scope:'https://www.googleapis.com/auth/drive.appdata',
-    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GD.tok=r.access_token;GD.cid=cid;GD.exp=Date.now()+(r.expires_in-60)*1000;res(GD.tok)},
+  google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCA(),
+    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GD.tok=r.access_token;GD.cid=cid;GD.sc=SCA();GD.exp=Date.now()+(r.expires_in-60)*1000;res(GD.tok)},
     error_callback:e=>rej(new Error('Google 授權視窗被關閉或被瀏覽器擋下（'+(e.type||'')+'）'))}).requestAccessToken();
 })}
 const gdf=async(u,o)=>{const t=await gdAuth();const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},(o||{}).headers)}));if(!r.ok)throw new Error(r.status===401?'Google 授權已過期，請再按一次':r.status===403?'Google 拒絕存取（確認已啟用 Drive API，且你是測試使用者）':'Google Drive 錯誤 '+r.status);return r};
-async function gdList(){const m={};let pt='';do{const j=await(await gdf('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1000&fields=nextPageToken,files(id,name)'+(pt?'&pageToken='+pt:''))).json();j.files.forEach(f=>m[f.name]=f.id);pt=j.nextPageToken||''}while(pt);return m}
+async function gdList(){const m={};let pt='';do{const j=await(await gdf('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1000&fields=nextPageToken,files(id,name)'+(pt?'&pageToken='+pt:''))).json();j.files.forEach(f=>m[f.name]=f.id);pt=j.nextPageToken||''}while(pt);
+  if(ls.get('oc_gd_ben','')==='1'){try{
+    const fq="mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and sharedWithMe and trashed=false";
+    const fj=await(await gdf(GAPI+'files?q='+encodeURIComponent(fq)+'&fields=files(id)')).json();
+    for(const fo of (fj.files||[])){let p2='';do{const k=await(await gdf(GAPI+'files?q='+encodeURIComponent("'"+fo.id+"' in parents and trashed=false")+'&pageSize=1000&fields=nextPageToken,files(id,name)'+(p2?'&pageToken='+p2:''))).json();(k.files||[]).forEach(f=>{if(!m[f.name])m[f.name]=f.id});p2=k.nextPageToken||''}while(p2)}
+  }catch(e){throw new Error('讀取 B 的共用資料夾失敗：'+gerr(e))}}
+  return m}
 function gdPut(name,text,id){
   if(id)return gdf('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'text/plain'},body:text});
   const b='b'+uid();
@@ -949,12 +961,12 @@ const unpackImg=o=>o.t==='s'?o.v:new Blob([fromB(o.v)],{type:o.type});
 const gdPull=async m=>m['oc.json']?dec(await gdGet(m['oc.json']),PW()):null;
 async function gdUp(m){
   const ts=Date.now(),data={},pw=PW();SK.forEach(k=>{const v=ls.get(k,null);if(v!==null)data[k]=v});
-  let up=0,skip=0;
+  let up=0,skip=0;const toB=ls.get('oc_gd_dest','a')==='b'&&ls.get('oc_gd_ben','')==='1';let bf=null;const getBf=async()=>bf||(bf=await gbFolder((await gbCheck()).a));
   for(const n of notes().filter(x=>x.iid)){
     const nm='img_'+n.iid;if(m[nm])continue;
     const v=await imgGet(n.iid);if(!v)continue;
     if((v.size||v.length)>25e6){skip++;continue}
-    await gdPut(nm,await enc(await packImg(v),pw));up++;
+    const pl=await enc(await packImg(v),pw);if(toB)await gbPut(await getBf(),nm,pl);else await gdPut(nm,pl);up++;
   }
   await gdPut('oc.json',await enc({ts,data},pw),m['oc.json']);
   ls.set('oc_gdsync',String(ts));return{up,skip};
@@ -970,11 +982,74 @@ async function gdSpace(){const el=$('#gdsp');try{el.textContent='讀取空間…
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}}
 $('#gdspb').onclick=gdSpace;
 const CIDS=()=>J('oc_gd_cids',[]);
-function gdFill(){const a=CIDS(),c=ls.get('oc_gd_cid','');$('#gdsel').innerHTML='<option value="">已存的用戶端 ID（'+a.length+'）</option>'+a.map(x=>'<option value="'+esc(x)+'"'+(x===c?' selected':'')+'>'+esc(x.length>34?x.slice(0,14)+'…'+x.slice(-22):x)+'</option>').join('')}
+function gdFill(){$('#gdben').checked=ls.get('oc_gd_ben','')==='1';$('#gddest').value=ls.get('oc_gd_dest','a');const a=CIDS(),c=ls.get('oc_gd_cid','');$('#gdsel').innerHTML='<option value="">已存的用戶端 ID（'+a.length+'）</option>'+a.map(x=>'<option value="'+esc(x)+'"'+(x===c?' selected':'')+'>'+esc(x.length>34?x.slice(0,14)+'…'+x.slice(-22):x)+'</option>').join('')}
 $('#gdsel').onchange=()=>{const v=$('#gdsel').value;if(v){$('#gdcid').value=v;ls.set('oc_gd_cid',v);GD.tok='';gdmsg('已切換用戶端 ID，下次同步會重新授權')}};
 $('#gdsave').onclick=()=>{const v=$('#gdcid').value.trim();if(!/\.apps\.googleusercontent\.com$/.test(v))return gdmsg('格式不對，應為 xxx.apps.googleusercontent.com',1);const a=CIDS();if(!a.includes(v))a.push(v);sv('oc_gd_cids',a);ls.set('oc_gd_cid',v);gdFill();gdmsg('已儲存這組用戶端 ID')};
 $('#gdrm').onclick=()=>{const v=$('#gdsel').value;if(!v||!confirm('從清單移除這個用戶端 ID？'))return;sv('oc_gd_cids',CIDS().filter(x=>x!==v));if($('#gdcid').value.trim()===v){$('#gdcid').value='';ls.set('oc_gd_cid','')}GD.tok='';gdFill()};
 gdFill();
+const GAPI='https://www.googleapis.com/drive/v3/';
+const GB={tok:'',exp:0};
+function gbLogin(){return new Promise((res,rej)=>{
+  const cid=ls.get('oc_gd_cid','');if(!cid)return rej(new Error('請先填入 Google 用戶端 ID'));
+  if(!(window.google&&google.accounts))return rej(new Error('Google 登入元件還沒載入，請確認網路後重新整理再試'));
+  google.accounts.oauth2.initTokenClient({client_id:cid,scope:'https://www.googleapis.com/auth/drive.file',prompt:'select_account',
+    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GB.tok=r.access_token;GB.exp=Date.now()+(r.expires_in-60)*1000;res(GB.tok)},
+    error_callback:e=>rej(new Error('Google 授權視窗被關閉或被瀏覽器擋下（'+(e.type||'')+'）'))}).requestAccessToken();
+})}
+const gbf=async(u,o)=>{if(!(GB.tok&&Date.now()<GB.exp))throw new Error('請先按「登入 B 帳號」');
+  const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+GB.tok},(o||{}).headers)}));
+  if(!r.ok){if(r.status===401)GB.tok='';throw new Error(r.status===401?'B 帳號授權已過期，請再按一次「登入 B 帳號」':r.status===403?'B 帳號拒絕存取（確認 B 已加入測試使用者）':'B Drive 錯誤 '+r.status)}return r};
+const mailOf=async f=>((await(await f(GAPI+'about?fields=user(emailAddress)')).json()).user.emailAddress||'').toLowerCase();
+async function gbCheck(){const b=await mailOf(gbf),a=await mailOf(gdf);
+  if(a===b){GB.tok='';throw new Error('登入的是 A 帳號，請按「登入 B 帳號」並選 B')}
+  const sb=ls.get('oc_gd_bmail','');if(sb&&sb!==b){GB.tok='';throw new Error('登入的不是先前設定的 B 帳號（'+sb+'）')}
+  ls.set('oc_gd_bmail',b);return{a,b}}
+async function gbFolder(aMail){
+  const q="mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and trashed=false";
+  const j=await(await gbf(GAPI+'files?q='+encodeURIComponent(q)+'&fields=files(id)')).json();
+  let id=j.files&&j.files[0]&&j.files[0].id;
+  if(!id)id=(await(await gbf(GAPI+'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'oc-sync-data',mimeType:'application/vnd.google-apps.folder'})})).json()).id;
+  const p=await(await gbf(GAPI+'files/'+id+'/permissions?fields=permissions(emailAddress,role)')).json();
+  if(!(p.permissions||[]).some(x=>(x.emailAddress||'').toLowerCase()===aMail&&(x.role==='writer'||x.role==='owner')))
+    await gbf(GAPI+'files/'+id+'/permissions?sendNotificationEmail=false',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',role:'writer',emailAddress:aMail})});
+  return id}
+function gbPut(fid,name,text){const b='b'+uid();
+  return gbf('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body:'--'+b+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify({name,parents:[fid]})+'\r\n--'+b+'\r\nContent-Type: text/plain\r\n\r\n'+text+'\r\n--'+b+'--'})}
+async function gbInfo(){const a=await(await gbf(GAPI+'about?fields=storageQuota,user(emailAddress)')).json(),mail=(a.user.emailAddress||'').toLowerCase(),sb=ls.get('oc_gd_bmail','');
+  if(sb&&sb!==mail){GB.tok='';throw new Error('登入的不是先前設定的 B 帳號（'+sb+'）')}
+  ls.set('oc_gd_bmail',mail);const q=a.storageQuota||{};
+  $('#gdbst').innerHTML='B 帳號：'+esc(mail)+'<br>B 總用量：'+fmtB(q.usage)+(q.limit?' / '+fmtB(q.limit)+'（剩 '+fmtB(q.limit-q.usage)+'）':'')+'<br>登入約 1 小時有效；要存到 B 時，上方「新圖片存到」選 B 再按上傳。'}
+$('#gdblogin').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{$('#gdbst').textContent='登入 B…';await gbLogin();await gbInfo()}catch(e){$('#gdbst').innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}};
+$('#gdbclr').onclick=()=>{ls.set('oc_gd_bmail','');GB.tok='';$('#gdbst').textContent='已清除 B 帳號記錄，下次登入可選別的帳號'};
+$('#gdben').onchange=()=>{ls.set('oc_gd_ben',$('#gdben').checked?'1':'0');GD.tok='';gdmsg($('#gdben').checked?'已啟用 B 分流，下次上傳／下載會請你重新授權 A（多一個唯讀權限）':'已關閉 B 分流')};
+$('#gddest').onchange=()=>{ls.set('oc_gd_dest',$('#gddest').value)};
+async function gdLsAll(f,qs){const out=[];let pt='';do{const j=await(await f(GAPI+'files?'+qs+'&pageSize=1000&fields=nextPageToken,files(id,name,size)'+(pt?'&pageToken='+pt:''))).json();out.push(...(j.files||[]));pt=j.nextPageToken||''}while(pt);return out}
+$('#gdclean').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
+  if(!PW())throw new Error('請先在上方填入同步密碼');
+  gdmsg('檢查中…');
+  const m=await gdList(),r=await gdPull(m);
+  if(r&&r.ts>+ls.get('oc_gdsync','0'))throw new Error('Drive 上有比這台更新的資料，請先按「從 Drive 下載」再清理');
+  const used=new Set(notes().map(n=>n.iid).filter(Boolean));
+  if(r&&r.data&&r.data.oc_notes){try{JSON.parse(r.data.oc_notes).forEach(n=>n.iid&&used.add(n.iid))}catch(e){}}
+  const orph=l=>l.filter(f=>/^img_/.test(f.name)&&!used.has(f.name.slice(4)));
+  const sz=l=>l.reduce((s,f)=>s+(+f.size||0),0);
+  const oa=orph(await gdLsAll(gdf,'spaces=appDataFolder'));
+  let ob=[],bMsg='';
+  if(ls.get('oc_gd_ben','')==='1'){
+    if(GB.tok&&Date.now()<GB.exp){
+      await gbCheck();
+      const fj=await(await gbf(GAPI+"files?q="+encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and trashed=false")+'&fields=files(id)')).json();
+      if(fj.files&&fj.files[0])ob=orph(await gdLsAll(gbf,'q='+encodeURIComponent("'"+fj.files[0].id+"' in parents and trashed=false")));
+    }else bMsg='（B 未登入，已略過 B；要清理 B 請先按「登入 B 帳號」）';
+  }
+  if(!oa.length&&!ob.length)return gdmsg('沒有需要清理的圖片'+bMsg);
+  if(!confirm('沒在任何筆記使用的圖片：\nA：'+oa.length+' 個（'+fmtB(sz(oa))+'），會永久刪除\nB：'+ob.length+' 個（'+fmtB(sz(ob))+'），會移到垃圾桶，30 天內可還原\n確定清理？'))return gdmsg('已取消清理');
+  gdmsg('清理中…');
+  for(const f of oa)await gdf(GAPI+'files/'+f.id,{method:'DELETE'});
+  for(const f of ob)await gbf(GAPI+'files/'+f.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});
+  gdmsg('已清理：A '+oa.length+' 個、B '+ob.length+' 個'+bMsg);gdSpace();
+}catch(e){gdmsg('失敗：'+gerr(e),1)}};
+
 
 $('#gdup').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
   if(!PW())throw new Error('請先在上方填入同步密碼');
