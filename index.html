@@ -488,7 +488,7 @@ async function saveFlow(ix){
   const ms=ix.map(i=>metaOf(S.hist[i])).filter(Boolean),ti=(ms[0]&&ms[0].title)||first.slice(0,30),kw=clean(ms.flatMap(m=>m.kws||[])).join(' ');
   MD={kind:'save',img,src:srcOf(ix)};
   openMdl('<h3>存成筆記</h3><p class="mut" style="margin:0 0 8px">以原文存入，可先修改。</p><input id="mt" placeholder="標題" value="'+esc(ti)+'"><input id="mk" value="'+esc(kw)+'" placeholder="關鍵字（用空格或逗號分隔，可留空）" style="margin-top:8px"><textarea id="mb" rows="8" style="margin-top:8px">'+esc(body)+'</textarea><button class="b g sm" id="mai" style="margin-top:8px">✨ AI 建議標題與關鍵字</button><p style="margin:8px 0 0">存到資料夾：<select id="mf">'+folderOpts('n',last().n)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="msv">儲存</button><button class="b g" id="mcx">取消</button></div>');
-  if(!ms.length)$('#mai').click();
+  $('#mai').click();
 }
 async function aiNote(ix,ex){
   if(S.busy)return;ex=ex||[];
@@ -686,14 +686,17 @@ function showFind(){
 $('#find').onclick=()=>{$('#menu').classList.add('hide');findFlow()};
 async function aiTK(tEl,kEl,bEl,btn){
   const body=bEl.value.trim();if(!body)return;
-  const old=btn.textContent;btn.disabled=true;btn.textContent='AI 想標題中…';
+  const ov=[tEl.value,kEl.value],op=[tEl.placeholder,kEl.placeholder];
+  btn.disabled=true;
+  [tEl,kEl].forEach(x=>{x.value='';x.disabled=true;x.placeholder=provName()+' is thinking...'});
   try{
     const vocab=clean(notes().flatMap(x=>x.kws||[])).slice(0,150).join('、');
     const o=jparse(await call([{role:'user',parts:[{text:'為以下筆記想一個標題與關鍵字。只輸出 JSON：{"title":"10到20字標題","kws":["關鍵字"]}。kws 3 到 5 個，第一個是科目或大分類，其餘為名詞，2 到 8 個字；已有的關鍵字請優先沿用：'+(vocab||'（目前沒有）')+'。繁體中文，不要 LaTeX。\n\n'+body.slice(0,3000)}]}],SYS2,true));
     if(o.title)tEl.value=o.title;
     if(o.kws)kEl.value=clean(o.kws).join(' ');
   }catch(e){alert(e.message)}
-  btn.disabled=false;btn.textContent=old;
+  [tEl,kEl].forEach((x,i)=>{x.disabled=false;x.placeholder=op[i];if(!x.value)x.value=ov[i]});
+  btn.disabled=false;
 }
 const FB=n=>'<div class="act"><button data-a="fo" data-i="'+n.id+'">開啟／下載「'+esc(n.file.name)+'」（'+Math.max(1,Math.round(n.file.size/1024))+' KB）</button></div>';
 async function openFile(id){
