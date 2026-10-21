@@ -1080,7 +1080,7 @@ async function gdSpace(){const el=$('#gdsp');try{el.textContent='讀取空間…
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}}
 $('#gdspb').onclick=gdSpace;
 const ACCTS=()=>J('oc_gd_accts',[]),NAMES=()=>J('oc_gd_cnames',{}),LOC=()=>J('oc_gd_loc',{});
-function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am:'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gddest').innerHTML='<option value="a">'+esc(ls.get('oc_gd_amail','')||'主帳號（登入後顯示信箱）')+'</option>'+ACCTS().map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}}
+function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am:'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gddest').innerHTML='<option value="a">'+esc(ls.get('oc_gd_amail','')||'主帳號（登入後顯示信箱）')+'</option>'+[...new Set(ACCTS())].filter(e=>e!==ls.get('oc_gd_amail','')).map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}}
 gdFill();
 const GAPI='https://www.googleapis.com/drive/v3/';
 const GT={};
@@ -1114,11 +1114,11 @@ async function gtFolder(em,aMail){
 function gtPut(em,fid,name,blob,up){
   return upNew(()=>gtTok(em),{name,parents:[fid]},typeof blob==='string'?new Blob([blob]):blob,up,st=>{if(st===401)delete GT[em];return new Error(st===401?em+' 授權已過期，請再按一次':st===403?em+' 拒絕存取（確認已加入測試使用者，或該帳號空間已滿）':em+' Drive 錯誤 '+st)})}
 const setLoc=(iid,em)=>{const l=LOC();l[iid]=em;sv('oc_gd_loc',l)};
-function showAccts(){return ACCTS().map(e=>esc(e)+(GT[e]&&Date.now()<GT[e].exp?'（已登入）':'（需要時自動切換）')).join('<br>')||'還沒有儲存帳號'}
+function showAccts(){return ACCTS().filter(e=>e!==ls.get('oc_gd_amail','')).map(e=>esc(e)+(GT[e]&&Date.now()<GT[e].exp?'（已登入）':'（需要時自動切換）')).join('<br>')||'還沒有儲存帳號'}
 $('#gdblogin').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());const el=$('#gdbst');try{
   el.textContent='請在視窗選要當儲存空間的帳號…';
   const n=await gtLogin('');const em=await whoTok(n.tok);GT[em]=n;
-  const a=ACCTS();if(!a.includes(em)){a.push(em);sv('oc_gd_accts',a)}
+  const a=ACCTS();if(em!==ls.get('oc_gd_amail','')&&!a.includes(em)){a.push(em);sv('oc_gd_accts',a)}
   let c=0;const fid=await gtFindFolder(em);
   if(fid){const l=LOC();(await gdLsAll((u,o)=>gtf(em,u,o),'q='+encodeURIComponent("'"+fid+"' in parents and trashed=false"))).forEach(f=>{if(/^img_/.test(f.name)){l[f.name.slice(4)]=em;c++}});sv('oc_gd_loc',l)}
   const q=(await(await gtf(em,GAPI+'about?fields=storageQuota')).json()).storageQuota||{};
