@@ -55,6 +55,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 #qbox .qtx{flex:1;min-width:0;font-size:14px;color:var(--mut);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 #qbox button{background:none;border:0;color:var(--mut);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <main>
@@ -98,6 +99,13 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <div class="mut" id="gstat" style="margin-top:8px"></div>
    <div class="row" style="margin-top:12px"><button class="b g" id="gbk">另存備份檔</button><label class="b g">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
    <p class="mut" style="margin:8px 0 0">會覆蓋資料前，系統會先請你另存備份檔。備份只含筆記文字、資料夾、API 設定與縮圖，通常不到幾 MB。</p>
+  </div>
+  <h2>Google Drive 同步（含圖片與檔案）</h2>
+  <div class="card">
+   <p class="mut" style="margin-top:0">先到 Google Cloud Console：建立專案、啟用 Drive API、設定 OAuth 同意畫面（把自己加為測試使用者），再建立「網頁應用程式」的 OAuth 用戶端 ID，「已授權的 JavaScript 來源」填這個網頁的網址（只填到網域，不含路徑），把用戶端 ID 貼在下面。資料與圖片上傳前會用上方的「同步密碼」加密，存在 Drive 的隱藏資料夾（Drive 介面看不到）。授權約 1 小時有效，過期請再按一次。</p>
+   <input id="gdcid" placeholder="OAuth 用戶端 ID（xxx.apps.googleusercontent.com）" autocomplete="off">
+   <div class="row" style="margin-top:12px"><button class="b" id="gdup">上傳到 Drive</button><button class="b g" id="gddown">從 Drive 下載</button></div>
+   <div class="mut" id="gdstat" style="margin-top:8px"></div>
   </div>
   <div class="card"><p class="mut" style="margin:0">圖片與對話會送到你目前選用的服務商處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。資料存在這台裝置的瀏覽器，請開啟雲端同步或定期匯出。</p></div>
  </div>
@@ -915,6 +923,65 @@ migrate();$('#nprov').onchange();fillApis();draw('n');draw('e');autoSync();
 gcAll();
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
+/* ===== Google Drive 同步（加密後存到 appDataFolder，含圖片與檔案） ===== */
+const GD={tok:'',exp:0},PW=()=>$('#gpw').value||ls.get('oc_gh_pw','');
+function gdAuth(){return new Promise((res,rej)=>{
+  if(GD.tok&&Date.now()<GD.exp)return res(GD.tok);
+  const cid=ls.get('oc_gd_cid','');if(!cid)return rej(new Error('請先填入 Google 用戶端 ID'));
+  if(!(window.google&&google.accounts))return rej(new Error('Google 登入元件還沒載入，請確認網路後重新整理再試'));
+  google.accounts.oauth2.initTokenClient({client_id:cid,scope:'https://www.googleapis.com/auth/drive.appdata',
+    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GD.tok=r.access_token;GD.exp=Date.now()+(r.expires_in-60)*1000;res(GD.tok)},
+    error_callback:e=>rej(new Error('Google 授權視窗被關閉或被瀏覽器擋下（'+(e.type||'')+'）'))}).requestAccessToken();
+})}
+const gdf=async(u,o)=>{const t=await gdAuth();const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},(o||{}).headers)}));if(!r.ok)throw new Error(r.status===401?'Google 授權已過期，請再按一次':r.status===403?'Google 拒絕存取（確認已啟用 Drive API，且你是測試使用者）':'Google Drive 錯誤 '+r.status);return r};
+async function gdList(){const m={};let pt='';do{const j=await(await gdf('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=1000&fields=nextPageToken,files(id,name)'+(pt?'&pageToken='+pt:''))).json();j.files.forEach(f=>m[f.name]=f.id);pt=j.nextPageToken||''}while(pt);return m}
+function gdPut(name,text,id){
+  if(id)return gdf('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'text/plain'},body:text});
+  const b='b'+uid();
+  return gdf('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body:'--'+b+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify({name,parents:['appDataFolder']})+'\r\n--'+b+'\r\nContent-Type: text/plain\r\n\r\n'+text+'\r\n--'+b+'--'});
+}
+const gdGet=async id=>(await gdf('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media')).text();
+const blobB64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result.split(',')[1]);f.readAsDataURL(b)});
+const packImg=async v=>typeof v==='string'?{t:'s',v}:{t:'b',type:v.type,v:await blobB64(v)};
+const unpackImg=o=>o.t==='s'?o.v:new Blob([fromB(o.v)],{type:o.type});
+const gdPull=async m=>m['oc.json']?dec(await gdGet(m['oc.json']),PW()):null;
+async function gdUp(m){
+  const ts=Date.now(),data={},pw=PW();SK.forEach(k=>{const v=ls.get(k,null);if(v!==null)data[k]=v});
+  let up=0,skip=0;
+  for(const n of notes().filter(x=>x.iid)){
+    const nm='img_'+n.iid;if(m[nm])continue;
+    const v=await imgGet(n.iid);if(!v)continue;
+    if((v.size||v.length)>25e6){skip++;continue}
+    await gdPut(nm,await enc(await packImg(v),pw));up++;
+  }
+  await gdPut('oc.json',await enc({ts,data},pw),m['oc.json']);
+  ls.set('oc_gdsync',String(ts));return{up,skip};
+}
+const gdmsg=(t,e)=>{$('#gdstat').innerHTML=e?'<span class="err">'+esc(t)+'</span>':esc(t)};
+$('#gdcid').value=ls.get('oc_gd_cid','');
+$('#gdup').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
+  if(!PW())throw new Error('請先在上方填入同步密碼');
+  const m=await gdList();gdmsg('檢查雲端…');
+  const r=await gdPull(m);
+  if(r&&r.ts>+ls.get('oc_gdsync','0')&&!confirm('Drive 上有比這台更新的資料（可能來自其他裝置），上傳會覆蓋它。確定繼續？'))return gdmsg('已取消上傳');
+  gdmsg('上傳中…（圖片較多時需要一點時間）');
+  const o=await gdUp(m);gdmsg('已上傳，新增 '+o.up+' 個檔案'+(o.skip?'，'+o.skip+' 個超過 25MB 未上傳':''));
+}catch(e){gdmsg('失敗：'+gerr(e),1)}};
+$('#gddown').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
+  if(!PW())throw new Error('請先在上方填入同步密碼');
+  const m=await gdList(),r=await gdPull(m);
+  if(!r)return gdmsg('Drive 上還沒有資料',1);
+  if(!confirm('用 Drive 版本覆蓋這台裝置的資料？（會先另存本機備份）'))return;
+  backup('覆蓋前-本機');applyRemote(r);
+  let n=0,miss=0;gdmsg('下載圖片與檔案中…');
+  for(const x of notes().filter(x=>x.iid)){
+    if(await imgGet(x.iid))continue;
+    const id=m['img_'+x.iid];if(!id){miss++;continue}
+    try{await imgPut(x.iid,unpackImg(await dec(await gdGet(id),PW())));n++}catch(e){miss++}
+  }
+  ls.set('oc_gdsync',String(r.ts));
+  gdmsg('已從 Drive 更新，下載 '+n+' 個檔案'+(miss?'，'+miss+' 個在 Drive 上找不到':''));
+}catch(e){gdmsg('失敗：'+gerr(e),1)}};
 /* ===== 底部固定列高度（學習列＋按鈕列），讓內容不被擋住 ===== */
 const lay=()=>{const r=document.documentElement.style;r.setProperty('--nh',$('nav').offsetHeight+'px');r.setProperty('--dh',$('#dock').offsetHeight+'px')};
 if(window.ResizeObserver){const ro=new ResizeObserver(lay);ro.observe($('nav'));ro.observe($('#dock'))}
