@@ -16,7 +16,7 @@ nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:0 0 12px}
 button.b,label.b{display:inline-block;background:var(--acc);color:var(--on);border:0;border-radius:8px;padding:13px 18px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
 button.g,label.g{background:none;color:var(--acc);border:1px solid var(--acc)}
-button.b.sm{padding:6px 12px;font-size:14px}
+button.b.sm,label.b.sm{padding:6px 12px;font-size:14px}
 button:disabled{opacity:.5}
 input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -121,7 +121,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
   <button class="b g" id="sum">存筆記</button>
   <button class="b g" id="aib">AI筆記</button>
   <button class="b" id="send">送出</button>
-  <div class="mw"><button class="b g" id="more" aria-label="更多">⋯</button><div id="menu" class="hide"><button id="reset">＋ 新聊天</button></div></div>
+  <div class="mw"><button class="b g" id="more" aria-label="更多">⋯</button><div id="menu" class="hide"><button id="find">🔍 找相關筆記</button><button id="reset">＋ 新聊天</button></div></div>
  </div>
 </div></div>
 <nav><button data-t="learn" class="on">學習</button><button data-t="n">筆記本</button><button data-t="e">精華</button><button data-t="set">設定</button></nav>
@@ -202,7 +202,7 @@ function toCl(c){
     return parts.length?{role:m.role==='model'?'assistant':'user',content:parts}:null;
   }).filter(Boolean);
 }
-const META=`回答的最後一行（獨立一行）必須附上：<<<META{"title":"10到20字的標題","kws":["關鍵字1","關鍵字2"]}>>>。kws 為 1 到 3 個名詞，2 到 8 個字，繁體中文。這行是給程式讀的，正文不要提到它。`;
+const META=`回答的最後一行（獨立一行）必須附上：<<<META{"title":"10到20字的標題","kws":["科目或大分類","關鍵字2","關鍵字3"]}>>>。kws 一定要有 3 到 5 個，第一個是科目或大分類（例如 有機化學、英文文法、優惠），其餘是名詞，2 到 8 個字，繁體中文，不要空白、不要 #。這行是給程式讀的，正文不要提到它。`;
 const FMT=`格式規則：不要開場白或自我介紹（不要說哈囉、我是你的家教、我們一步一步來），第一句直接進入內容。不要使用 # 標題、** 粗體、*** 或表格，用純文字、換行和「•」條列，段落標題用【】。`;
 const SYS=`你是自學者的家教，科目不限，依學生拍的題目判斷科目。一律使用繁體中文，用白話、生活化的比喻解釋，專有名詞第一次出現時附英文。禁止使用 LaTeX 或美元符號 $；化學式與符號用一般文字和 Unicode，例如 SN2、H₂O、CH₃⁺、→、⇌、δ+。
 收到圖片時，先列出「我看到的內容」：文字、結構、符號、箭頭、條件；看不清楚的地方明說「不確定」，不要猜。然後再解釋。
@@ -225,7 +225,7 @@ const sumP=(m,v)=>(m==='o'
  +kwTail(m,v);
 const selP=(m,v)=>(m==='o'
  ?'請把以上選取內容中的每一則優惠整理成筆記（今天是'+new Date().toLocaleDateString('zh-TW')+'）。只輸出 JSON：{"items":[{"title":"店家＋優惠（一行）","body":"店家：…\\n優惠：…\\n期限：…\\n條件：…\\n使用方式：…","kws":["關鍵字"]}]}\n'
- :'請把以上我選取的訊息摘要成條列式筆記（1 到 3 則，不要逐字複製，保留重點、易錯點與例子）。只輸出 JSON：{"items":[{"title":"標題（一行）","body":"• 重點一\\n• 重點二\\n• 易錯點或例子","kws":["關鍵字"]}]}\n')
+ :'請把以上我選取的訊息做成「快速回憶摘要」，用來幾天後掃一眼就能想起來，也方便轉成 Anki 卡片（標題＝正面，內容＝背面）。不要逐字複製，不要重講解釋。1 到 3 則。只輸出 JSON：{"items":[{"title":"標題（一行，像卡片正面的問題或主題）","body":"【一句話】用一句白話講完核心\\n【回想線索】• 關鍵詞或口訣（最多 4 點，每點 15 字內）\\n【易錯】• 最容易搞混的地方（1 到 2 點）\\nQ：一個能測試核心觀念的問題\\nA：簡短答案","kws":["關鍵字"]}]}\n')
  +kwTail(m,v);
 function ctx(h){let n=0;return h.slice().reverse().map(m=>{if(m.parts.some(p=>p.inline_data)){n++;if(n>2)return{role:m.role,parts:m.parts.filter(p=>!p.inline_data).concat([{text:'（較早的圖片已省略）'}])}}return m}).reverse()}
 
@@ -324,13 +324,14 @@ function pickFolder(k,v){
 const rememberF=(k,id)=>{const L=last();L[k]=id;sv('oc_last',L)};
 
 /* ===== 學習頁 ===== */
+const mk=h=>{const m=metaOf(h);return m&&m.kws&&m.kws.length?'<div style="margin-top:6px">'+m.kws.map(w=>'<span class="tag">#'+esc(tex(w))+'</span>').join('')+'</div>':''};
 function render(noScroll){
   $('#chat').innerHTML=S.hist.map((h,i)=>{
     const t=txt(h),img=h.parts.find(p=>p.inline_data);
     const ab=t?'<div class="act"><button data-m="cp" data-i="'+i+'">複製</button><button data-m="qt" data-i="'+i+'">引用</button><button data-m="sv" data-i="'+i+'">存成筆記</button><button data-m="ai" data-i="'+i+'">AI製作筆記</button><button data-m="rg" data-i="'+i+'">重整</button></div>':'';
     const cls=S.sel.has(i)?' sel':'';
     if(h.role==='user')return '<div class="msg me'+cls+'" data-idx="'+i+'">'+(img?'<img class="pv" src="data:image/jpeg;base64,'+img.inline_data.data+'">':'')+esc(t)+ab+'</div>';
-    return '<div class="msg'+cls+'" data-idx="'+i+'">'+esc(tex(t))+ab+'</div>';
+    return '<div class="msg'+cls+'" data-idx="'+i+'">'+esc(tex(t))+mk(h)+ab+'</div>';
   }).join('');
   markSel();
   if(!noScroll)window.scrollTo(0,document.body.scrollHeight);
@@ -486,18 +487,20 @@ async function saveFlow(ix){
   const img=await thumbOf(ix);
   const ms=ix.map(i=>metaOf(S.hist[i])).filter(Boolean),ti=(ms[0]&&ms[0].title)||first.slice(0,30),kw=clean(ms.flatMap(m=>m.kws||[])).join(' ');
   MD={kind:'save',img,src:srcOf(ix)};
-  openMdl('<h3>存成筆記</h3><p class="mut" style="margin:0 0 8px">以原文存入，可先修改。</p><input id="mt" placeholder="標題" value="'+esc(ti)+'"><input id="mk" value="'+esc(kw)+'" placeholder="關鍵字（用空格或逗號分隔，可留空）" style="margin-top:8px"><textarea id="mb" rows="8" style="margin-top:8px">'+esc(body)+'</textarea><p style="margin:8px 0 0">存到資料夾：<select id="mf">'+folderOpts('n',last().n)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="msv">儲存</button><button class="b g" id="mcx">取消</button></div>');
+  openMdl('<h3>存成筆記</h3><p class="mut" style="margin:0 0 8px">以原文存入，可先修改。</p><input id="mt" placeholder="標題" value="'+esc(ti)+'"><input id="mk" value="'+esc(kw)+'" placeholder="關鍵字（用空格或逗號分隔，可留空）" style="margin-top:8px"><textarea id="mb" rows="8" style="margin-top:8px">'+esc(body)+'</textarea><button class="b g sm" id="mai" style="margin-top:8px">✨ AI 建議標題與關鍵字</button><p style="margin:8px 0 0">存到資料夾：<select id="mf">'+folderOpts('n',last().n)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="msv">儲存</button><button class="b g" id="mcx">取消</button></div>');
+  if(!ms.length)$('#mai').click();
 }
-async function aiNote(ix){
-  if(S.busy)return;
-  if(!ix.length&&S.hist.length-S.start<2){$('#status').textContent='先跟 AI 討論或拍一張圖，或長按上方訊息框選取內容，再按「AI筆記」。';return}
+async function aiNote(ix,ex){
+  if(S.busy)return;ex=ex||[];
+  if(!ix.length&&!ex.length&&S.hist.length-S.start<2){$('#status').textContent='先跟 AI 討論或拍一張圖，或長按上方訊息框選取內容，再按「AI筆記」。';return}
   busy(true,'AI 整理中…');
   try{
     const vocab=clean(notes().flatMap(x=>x.kws||[])).slice(0,150).join('、');
     let contents,img;
-    if(ix.length){
+    if(ix.length||ex.length){
+      const old=ex.length?'\n\n以下是我已有的相關筆記（請一併整合，去除重複）：\n\n'+ex.map(x=>'《'+tex(x.title)+'》\n'+tex(x.body)).join('\n\n'):'';
       const imgs=ix.flatMap(i=>S.hist[i].parts.filter(p=>p.inline_data)).slice(-2);
-      contents=[{role:'user',parts:[...imgs,{text:'以下是我選取的訊息：\n\n'+bodyOf(ix)+'\n\n'+selP(S.mode,vocab)}]}];
+      contents=[{role:'user',parts:[...imgs,{text:'以下是我選取的訊息：\n\n'+bodyOf(ix)+old+'\n\n'+selP(S.mode,vocab)}]}];
       img=await thumbOf(ix);
     }else{
       contents=[...ctx(S.hist.slice(S.start)),{role:'user',parts:[{text:sumP(S.mode,vocab)}]}];
@@ -507,7 +510,7 @@ async function aiNote(ix){
     const arr=(Array.isArray(o)?o:o.items)||[];
     if(!arr.length){busy(false,'沒有找到可存的重點。多說說你的想法再試一次。');return}
     S.pend=arr.map(x=>({title:x.title||'（未命名）',body:Array.isArray(x.body)?x.body.join('\n'):(x.body||''),kws:clean(x.kws)}));
-    MD={kind:'ai',img,src:srcOf(ix.length?ix:S.hist.map((_,i)=>i).slice(S.start))};
+    MD={kind:'ai',img,src:srcOf(ix.length||ex.length?ix:S.hist.map((_,i)=>i).slice(S.start))};
     busy(false,'');
     openMdl('<h3>AI 製作的筆記（尚未存入）</h3><p class="mut" style="margin:0 0 8px">取消勾選的不會存。</p>'+S.pend.map((x,i)=>'<div class="card" style="margin-top:8px"><div style="display:flex;gap:10px"><input type="checkbox" data-p="'+i+'" checked style="width:22px;flex:none;margin-top:5px"><div><b>'+esc(tex(x.title))+'</b><br>'+kt(x.kws)+'<div style="white-space:pre-wrap">'+esc(tex(x.body))+'</div></div></div></div>').join('')+'<p style="margin:8px 0 0">存到：<select id="mkind" style="width:auto"><option value="e" selected>精華</option><option value="n">筆記本</option></select></p><p style="margin:8px 0 0">資料夾：<select id="mf">'+folderOpts('e',last().e)+'</select></p><div class="row" style="margin-top:12px"><button class="b" id="mok">確認存入</button><button class="b g" id="mcx">取消</button></div>');
   }catch(e){busy(false,errH(e))}
@@ -517,6 +520,12 @@ $('#aib').onclick=()=>aiNote(selIdx());
 $('#mdl').onclick=async e=>{
   const id=e.target.id;
   if(id==='mdl'||id==='mcx'){closeMdl();return}
+  if(id==='mai'){aiTK($('#mt'),$('#mk'),$('#mb'),e.target);return}
+  if(id==='fsum'&&FD){
+    const pk=[...document.querySelectorAll('#mdl [data-f]')].filter(c=>c.checked).map(c=>FD.hits[+c.dataset.f]);
+    if(!pk.length&&!FD.ix.length){alert('請至少勾選一則筆記');return}
+    closeMdl();aiNote(FD.ix,pk);return;
+  }
   if(id==='zt'){const im=$('#zimg'),big=im.style.width!=='250%';im.style.width=big?'250%':'100%';$('#zt').textContent=big?'縮小':'放大';return}
   if(id==='msv'&&MD){
     const title=$('#mt').value.trim();if(!title){alert('請輸入標題');return}
@@ -531,7 +540,7 @@ $('#mdl').onclick=async e=>{
     const kd=$('#mkind')?$('#mkind').value:'n';
     const fid=pickFolder(kd,$('#mf').value);if(!fid)return;
     const d=new Date().toLocaleString('zh-TW'),img=MD.img;if(MD.busy)return;MD.busy=true;const iid=await mkImg(MD.src);
-    const ok=sv('oc_notes',[...keep.map(x=>({id:uid(),k:kd,fid,title:x.title,body:x.body,kws:x.kws,img,iid,date:d})),...notes()]);
+    const ok=sv('oc_notes',[...keep.map(x=>({id:uid(),k:kd,fid,ai:1,title:x.title,body:x.body,kws:x.kws,img,iid,date:d})),...notes()]);
     noteDone(fid,keep.length,ok,kd);
   }
 };
@@ -542,7 +551,7 @@ $('#mdl').onchange=e=>{
 /* ===== 筆記本／精華（共用） ===== */
 const TT={n:'筆記本',e:'精華'};
 ['n','e'].forEach(k=>{
-  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="x">匯出</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
+  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="x">匯出</button><button class="b g sm" data-a="ax">Anki CSV</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
   $('#s'+k).oninput=()=>draw(k);
 });
 function draw(k){
@@ -551,14 +560,16 @@ function draw(k){
   const F=folds().filter(x=>x.k===k),N=notes().filter(x=>x.k===k),cf=F.find(x=>x.id===fid);
   if(fid&&!cf)fid=V[k]='';
   const fn=id=>(F.find(x=>x.id===id)||{name:'?'}).name;
-  const hit=n=>!q||(n.title+' '+n.body+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase().includes(q);
+  const qs=q.split(/[\s,，、#]+/).filter(Boolean);
+  const hit=n=>{const h=(tex(n.title)+' '+tex(n.body)+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase();return qs.every(w=>h.includes(w))};
   const fc=f=>'<div class="card hd" data-a="of" data-i="'+f.id+'" style="cursor:pointer"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div>';
-  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
+  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+(n.ai?' <span class="tag">AI摘要</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.file?FB(n):'')+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯</button><button data-a="dn" data-i="'+n.id+'">刪除</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
   const bar='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
   let h,d;
   if(fid){
-    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button><span><button class="b g sm" data-a="rf">改名</button> <button class="b g sm" data-a="df">刪除</button></span></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button>'+bar+'</div>';
-    d=list(N.filter(n=>n.fid===fid&&hit(n)));
+    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button><span><button class="b g sm" data-a="rf">改名</button> <button class="b g sm" data-a="df">刪除</button></span></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案<input id="up'+k+'" type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.ppt,.pptx"></label>'+bar+'</div>';
+    const r=N.filter(n=>n.fid===fid&&hit(n));
+    d=list(r)+(q&&!r.length?'<button class="b g sm" data-a="gs">改搜全部資料夾</button>':'');
   }else if(!q){
     h='<div class="hd"><span class="mut">資料夾（科目）</span><button class="b g sm" data-a="nf">＋新資料夾</button></div>';
     d=F.length?F.map(fc).join(''):'<p class="mut">還沒有資料夾。按「＋新資料夾」建立科目，例如：有機化學、英文、優惠。也可以在「學習」頁存筆記時直接新增。</p>';
@@ -571,7 +582,7 @@ function draw(k){
 function openEd(k,id){
   const n=id?notes().find(x=>x.id===id):null;
   ED={k,id:id||''};
-  $('#ed'+k).innerHTML='<div class="card"><h3>'+(n?'編輯筆記':'新增筆記')+'</h3><input name="t" placeholder="標題" value="'+esc(n?n.title:'')+'"><input name="k" placeholder="關鍵字（用空格或逗號分隔）" style="margin-top:8px" value="'+esc(n?(n.kws||[]).join(' '):'')+'"><textarea name="b" rows="8" placeholder="內容" style="margin-top:8px">'+esc(n?n.body:'')+'</textarea><p style="margin:8px 0 0">資料夾：<select name="f">'+folderOpts(k,n?n.fid:(V[k]||last()[k]))+'</select></p><div class="row" style="margin-top:12px"><button class="b" data-a="es">儲存</button><button class="b g" data-a="ec">取消</button></div></div>';
+  $('#ed'+k).innerHTML='<div class="card"><h3>'+(n?'編輯筆記':'新增筆記')+'</h3><input name="t" placeholder="標題" value="'+esc(n?n.title:'')+'"><input name="k" placeholder="關鍵字（用空格或逗號分隔）" style="margin-top:8px" value="'+esc(n?(n.kws||[]).join(' '):'')+'"><textarea name="b" rows="8" placeholder="內容" style="margin-top:8px">'+esc(n?n.body:'')+'</textarea><p style="margin:8px 0 0">資料夾：<select name="f">'+folderOpts(k,n?n.fid:(V[k]||last()[k]))+'</select></p><div class="row" style="margin-top:12px"><button class="b" data-a="es">儲存</button><button class="b g" data-a="eai">✨ AI 標題/關鍵字</button><button class="b g" data-a="ec">取消</button></div></div>';
   $('#ed'+k).scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function aiMerge(k){
@@ -612,7 +623,7 @@ async function out(md,name){
   else if(a==='nn')openEd(k,null);
   else if(a==='en')openEd(k,i);
   else if(a==='dn'){if(confirm('確定刪除這則筆記？')){sv('oc_notes',notes().filter(x=>x.id!==i));gcAll();draw(k)}}
-  else if(a==='sa')document.querySelectorAll('#p-'+k+' [data-c]').forEach(c=>c.checked=true);
+  else if(a==='sa'){const cs=[...document.querySelectorAll('#p-'+k+' [data-c]')],all=cs.length&&cs.every(c=>c.checked);cs.forEach(c=>c.checked=!all);t.textContent=all?'全選':'取消全選'}
   else if(a==='ai')aiMerge(k);
   else if(a==='ac'){AP=null;$('#ap'+k).innerHTML=''}
   else if(a==='ec'){ED=null;$('#ed'+k).innerHTML=''}
@@ -632,12 +643,93 @@ async function out(md,name){
     sv('oc_notes',arr);gcAll();rememberF('e',fid);AP=null;
     $('#ap'+k).innerHTML=k==='n'?'<p class="mut">已存入「精華」頁的資料夾。</p>':'';draw(k);
   }
+  else if(a==='gs'){V[k]='';draw(k)}
+  else if(a==='fo')openFile(i);
+  else if(a==='eai'){const g=n=>$('#ed'+k+' [name='+n+']');aiTK(g('t'),g('k'),g('b'),t)}
+  else if(a==='ax')ankiOut(k);
   else if(a==='x'){
     const md=folds().filter(f=>f.k===k).map(f=>'# '+f.name+'\n\n'+notes().filter(n=>n.k===k&&n.fid===f.id).map(n=>'## '+n.title+'\n'+(n.kws||[]).map(w=>'#'+w).join(' ')+'\n\n'+n.body+'\n').join('\n')).join('\n');
     out(tex(md),TT[k]+'.md');
   }
 });
 
+/* ===== 檢索／AI 標題關鍵字／檔案上傳／Anki CSV ===== */
+let FD=null;
+const grams=s=>{s=tex(s).toLowerCase();const o=new Set();(s.match(/[a-z0-9]+/g)||[]).forEach(w=>{if(w.length>1)o.add(w)});const c=s.replace(/[^\u4e00-\u9fff]/g,'');for(let i=0;i<c.length-1;i++)o.add(c.slice(i,i+2));return o};
+function related(q,k,n){
+  const g=grams(q);
+  return notes().filter(x=>x.k===k).map(x=>{const t=grams(x.title+' '+(x.kws||[]).join(' ')),b=grams(x.body);let s=0;g.forEach(w=>{if(t.has(w))s+=3;else if(b.has(w))s+=1});return{x,s}}).filter(r=>r.s>0).sort((a,b)=>b.s-a.s).slice(0,n).map(r=>r.x);
+}
+async function findFlow(){
+  if(S.busy)return;
+  const ix=selIdx();
+  let q=ix.length?bodyOf(ix):($('#q').value.trim()||bodyOf(S.hist.map((_,i)=>i).filter(i=>txt(S.hist[i])).slice(-2)));
+  q=q.slice(0,1500);
+  if(!q.trim()){$('#status').textContent='先選取訊息、輸入文字，或先聊一下再搜尋。';return}
+  busy(true,'AI 檢索筆記中…');
+  try{
+    const cand=related(q,'n',30),pool=cand.length?cand:notes().filter(x=>x.k==='n').slice(0,40);
+    if(!pool.length){busy(false,'筆記本裡還沒有筆記。');return}
+    let hits=[],why={};
+    try{
+      const idx=pool.map(x=>x.id+'｜'+tex(x.title)+'｜'+(x.kws||[]).join('/')+'｜'+tex(x.body).replace(/\s+/g,' ').slice(0,60)).join('\n');
+      const o=jparse(await call([{role:'user',parts:[{text:'以下是我的筆記索引（id｜標題｜關鍵字｜開頭）與一段新內容。找出主題相關、值得一起複習或合併的筆記，最多 8 則，依相關度排序。沒有相關就回傳空陣列。只輸出 JSON：{"hits":[{"id":"…","why":"一句話原因"}]}\n\n【新內容】\n'+q+'\n\n【筆記索引】\n'+idx}]}],SYS2,true));
+      (o.hits||[]).forEach(h=>{const x=pool.find(p=>p.id===h.id);if(x&&!hits.includes(x)){hits.push(x);why[x.id]=h.why||''}});
+    }catch(e){hits=cand.slice(0,8)}
+    busy(false,'');FD={q,ix,hits,why};showFind();
+  }catch(e){busy(false,errH(e))}
+}
+function showFind(){
+  const {ix,hits,why}=FD,fn=id=>(folds().find(f=>f.id===id)||{name:'?'}).name;
+  openMdl('<h3>相關筆記</h3><p class="mut" style="margin:0 0 8px">'+(hits.length?'勾選要一起摘要的筆記。':'筆記本裡沒有找到相關筆記。')+(ix.length?'已選取的 '+ix.length+' 則訊息也會一起摘要。':'沒有選取訊息，只會摘要勾選的筆記。')+'</p>'+hits.map((x,i)=>'<div class="card" style="margin-top:8px"><div style="display:flex;gap:10px"><input type="checkbox" data-f="'+i+'" checked style="width:22px;flex:none;margin-top:5px"><div style="min-width:0"><b>'+esc(tex(x.title))+'</b> <span class="tag">📁 '+esc(fn(x.fid))+'</span><br>'+(why[x.id]?'<span class="mut">'+esc(why[x.id])+'</span><br>':'')+kt(x.kws)+'<details><summary>查看內容</summary><div style="white-space:pre-wrap">'+esc(tex(x.body))+'</div></details></div></div></div>').join('')+'<div class="row" style="margin-top:12px">'+(hits.length||ix.length?'<button class="b" id="fsum">AI 摘要</button>':'')+'<button class="b g" id="mcx">關閉</button></div>');
+}
+$('#find').onclick=()=>{$('#menu').classList.add('hide');findFlow()};
+async function aiTK(tEl,kEl,bEl,btn){
+  const body=bEl.value.trim();if(!body)return;
+  const old=btn.textContent;btn.disabled=true;btn.textContent='AI 想標題中…';
+  try{
+    const vocab=clean(notes().flatMap(x=>x.kws||[])).slice(0,150).join('、');
+    const o=jparse(await call([{role:'user',parts:[{text:'為以下筆記想一個標題與關鍵字。只輸出 JSON：{"title":"10到20字標題","kws":["關鍵字"]}。kws 3 到 5 個，第一個是科目或大分類，其餘為名詞，2 到 8 個字；已有的關鍵字請優先沿用：'+(vocab||'（目前沒有）')+'。繁體中文，不要 LaTeX。\n\n'+body.slice(0,3000)}]}],SYS2,true));
+    if(o.title)tEl.value=o.title;
+    if(o.kws)kEl.value=clean(o.kws).join(' ');
+  }catch(e){alert(e.message)}
+  btn.disabled=false;btn.textContent=old;
+}
+const FB=n=>'<div class="act"><button data-a="fo" data-i="'+n.id+'">開啟／下載「'+esc(n.file.name)+'」（'+Math.max(1,Math.round(n.file.size/1024))+' KB）</button></div>';
+async function openFile(id){
+  const n=notes().find(x=>x.id===id);if(!n||!n.file)return;
+  const b=await imgGet(n.iid);
+  if(!b){alert('這個檔案不在這台裝置上（檔案不會雲端同步）');return}
+  const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n.file.name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),10000);
+}
+['n','e'].forEach(k=>$('#p-'+k).addEventListener('change',async e=>{
+  if(e.target.id!=='up'+k)return;
+  const fid=V[k],fs=[...e.target.files];e.target.value='';if(!fid||!fs.length)return;
+  const out=[];
+  for(const f of fs){
+    const isImg=f.type.startsWith('image/'),iid=uid();let img=null;
+    try{
+      if(isImg){img=await shrink(f,300,.6);if(!await imgPut(iid,await shrink(f,2400,.88)))throw 0}
+      else if(!await imgPut(iid,f))throw 0;
+    }catch(x){alert('「'+f.name+'」儲存失敗（檔案太大或空間不足）');continue}
+    out.push({id:uid(),k,fid,title:f.name,body:'',kws:[],img,iid,file:isImg?null:{name:f.name,type:f.type,size:f.size},date:new Date().toLocaleString('zh-TW')});
+  }
+  if(out.length){sv('oc_notes',[...out,...notes()]);draw(k)}
+}));
+function ankiOut(k){
+  const ch=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+  let a=notes().filter(n=>n.k===k);
+  if(ch.length)a=a.filter(n=>ch.includes(n.id));else if(V[k])a=a.filter(n=>n.fid===V[k]);
+  a=a.filter(n=>n.body||!n.file);
+  if(!a.length){alert('沒有可匯出的筆記（可先勾選，或進入資料夾）');return}
+  const F=folds(),h=s=>esc(tex(s)).replace(/\n/g,'<br>'),q=s=>'"'+s.replace(/"/g,'""')+'"';
+  const rows=a.map(n=>[h(n.title),h(n.body),(n.kws||[]).map(w=>tex(w).replace(/\s+/g,'_')).join(' '),((F.find(f=>f.id===n.fid)||{}).name||'未分類').replace(/"/g,'')].map(q).join(','));
+  const csv='#separator:comma\n#html:true\n#tags column:3\n#deck column:4\n'+rows.join('\n');
+  const d=new Date(),p=x=>String(x).padStart(2,'0'),name='anki-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.csv';
+  const el=document.createElement('a');el.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));el.download=name;document.body.appendChild(el);el.click();el.remove();
+  setTimeout(()=>URL.revokeObjectURL(el.href),5000);
+}
 /* ===== API 套用／管理 ===== */
 function cfgSum(){const c=cur();$('#cfgsum').textContent=(c?label(c)+' / '+(c.model||'未設定'):'尚未設定')+' / '+($('#mode').value==='o'?'優惠整理':'題目討論')}
 function fillApis(){
