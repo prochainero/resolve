@@ -2,6 +2,8 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<!-- © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 -->
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>學習筆記本</title>
 <style>
@@ -128,6 +130,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <nav><button data-t="learn" class="on">學習</button><button data-t="n">筆記本</button><button data-t="e">精華</button><button data-t="set">設定</button></nav>
 
 <script>
+/* © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 */
 const $=s=>document.querySelector(s);
 const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think'];
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
