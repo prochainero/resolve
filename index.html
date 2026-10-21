@@ -26,6 +26,10 @@ input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(
 .msg{white-space:pre-wrap;padding:11px 13px;border-radius:10px;margin:0 0 10px;max-width:94%;background:var(--card);border:1px solid var(--bd);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .msg.me{background:var(--me);margin-left:auto;border-color:transparent}
 .msg.tx{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.selitem{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.selitem details>*:not(summary){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.selitem.sel{outline:2px solid var(--acc)}
+.selitem.sel::before{content:"✓ 已選取";display:block;font-size:13px;color:var(--acc);font-weight:600}
 .msg.sel{outline:2px solid var(--acc)}
 .msg.sel::before{content:"✓ 已選取";display:block;font-size:13px;color:var(--acc);font-weight:600}
 .err{color:var(--warn);font-weight:600}
@@ -614,7 +618,7 @@ $('#mdl').onchange=e=>{
 /* ===== 筆記本／精華（共用） ===== */
 const TT={n:'筆記本',e:'精華'};
 ['n','e'].forEach(k=>{
-  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="ax">匯出 CSV</button></div><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
+  $('#p-'+k).innerHTML='<h2>'+TT[k]+'</h2><div class="row" style="margin-bottom:10px"><input id="s'+k+'" placeholder="搜尋標題、標籤、內容（可打 #關鍵字）" style="flex:1;min-width:0"><button class="b g sm" data-a="ax">匯出 CSV</button></div><p class="mut" style="margin:0 0 8px">長按項目 2 秒可選取（再長按或點一下可取消），選取後用「改名／刪除／匯出」等按鈕操作。</p><div id="h'+k+'"></div><div id="ed'+k+'"></div><div id="ap'+k+'"></div><div id="d'+k+'"></div>';
   $('#s'+k).oninput=()=>draw(k);
 });
 function draw(k){
@@ -625,8 +629,8 @@ function draw(k){
   const fn=id=>(F.find(x=>x.id===id)||{name:'?'}).name;
   const qs=q.split(/[\s,，、#]+/).filter(Boolean);
   const hit=n=>{const h=(tex(n.title)+' '+tex(n.body)+' '+(n.kws||[]).join(' ')+' '+fn(n.fid)).toLowerCase();return qs.every(w=>h.includes(w))};
-  const fc=f=>'<div class="card" style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-f="'+f.id+'" style="width:22px;flex:none"><div data-a="of" data-i="'+f.id+'" style="flex:1;min-width:0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div></div>';
-  const list=(a,sf)=>a.length?a.map(n=>'<div class="card"><div style="display:flex;gap:10px"><input type="checkbox" data-c="'+n.id+'" style="width:22px;flex:none;margin-top:5px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+(n.ai?' <span class="tag">AI摘要</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.file?FB(n):'')+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯內容</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
+  const fc=f=>'<div class="card selitem" data-f="'+f.id+'"><div data-a="of" data-i="'+f.id+'" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>📁 '+esc(f.name)+'</b><br><span class="mut">'+N.filter(n=>n.fid===f.id).length+' 則</span></span><span>›</span></div></div>';
+  const list=(a,sf)=>a.length?a.map(n=>'<div class="card selitem" data-c="'+n.id+'"><div style="display:flex;gap:10px"><div style="flex:1;min-width:0"><b>'+esc(tex(n.title))+'</b>'+(sf?' <span class="tag">📁 '+esc(fn(n.fid))+'</span>':'')+(n.ai?' <span class="tag">AI摘要</span>':'')+'<br>'+kt(n.kws)+'</div></div><details><summary>查看內容</summary>'+(n.file?FB(n):'')+(n.img?'<img class="pv" src="'+n.img+'" style="margin-top:8px;cursor:zoom-in" data-a="zoom" data-i="'+n.id+'"><div class="mut" style="margin:-4px 0 8px">點圖片可看原圖</div>':'')+'<div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(n.body))+'</div><div class="mut">'+esc(n.date||'')+'</div><div class="act"><button data-a="en" data-i="'+n.id+'">編輯內容</button></div></details></div>').join(''):'<p class="mut">沒有符合的筆記。</p>';
   const mg='<button class="b g sm" data-a="sa">全選</button> <button class="b g sm" data-a="rn">改名</button> <button class="b g sm" data-a="dl">刪除</button>';
   const bar=mg+' <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
   let h,d;
@@ -650,7 +654,7 @@ function openEd(k,id){
   $('#ed'+k).scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function aiMerge(k){
-  const ids=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+  const ids=[...document.querySelectorAll('#p-'+k+' .sel[data-c]')].map(c=>c.dataset.c);
   const sel=notes().filter(n=>ids.includes(n.id));
   if(sel.length<(k==='e'?2:1)){alert(k==='e'?'請先勾選至少 2 則精華':'請先勾選要整理的筆記');return}
   $('#ap'+k).innerHTML='<p class="mut">AI 整理中…</p>';
@@ -678,13 +682,13 @@ async function zoomImg(nid){
   else if(a==='tag'){V[k]='';s.value='#'+i;draw(k)}
   else if(a==='nf'){const n=(prompt('資料夾名稱')||'').trim();if(n){sv('oc_fold',[...folds(),{id:uid(),name:n,k}]);draw(k)}}
   else if(a==='rn'){
-    const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+    const cf=[...document.querySelectorAll('#p-'+k+' .sel[data-f]')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' .sel[data-c]')].map(c=>c.dataset.c);
     if(cf.length+cn.length!==1){alert('請先勾選 1 個項目再改名（目前勾選 '+(cf.length+cn.length)+' 個）');return}
     if(cf.length){const f=folds().find(x=>x.id===cf[0]),n=(prompt('資料夾新名稱',f.name)||'').trim();if(n){sv('oc_fold',folds().map(x=>x.id===f.id?{...x,name:n}:x));draw(k)}}
     else{const o=notes().find(x=>x.id===cn[0]),n=(prompt('筆記新標題',tex(o.title))||'').trim();if(n){sv('oc_notes',notes().map(x=>x.id===o.id?{...x,title:n}:x));draw(k)}}
   }
   else if(a==='dl'){
-    const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
+    const cf=[...document.querySelectorAll('#p-'+k+' .sel[data-f]')].map(c=>c.dataset.f),cn=[...document.querySelectorAll('#p-'+k+' .sel[data-c]')].map(c=>c.dataset.c);
     if(!cf.length&&!cn.length){alert('請先勾選要刪除的項目');return}
     const inF=notes().filter(x=>cf.includes(x.fid)).length,extra=cn.filter(id=>{const x=notes().find(y=>y.id===id);return x&&!cf.includes(x.fid)}).length;
     const msg=(cf.length?'資料夾 '+cf.length+' 個（含裡面的 '+inF+' 則筆記）':'')+(cf.length&&extra?'、':'')+(extra?'筆記 '+extra+' 則':'');
@@ -697,7 +701,7 @@ async function zoomImg(nid){
   else if(a==='zoom')zoomImg(i);
   else if(a==='nn')openEd(k,null);
   else if(a==='en')openEd(k,i);
-  else if(a==='sa'){const cs=[...document.querySelectorAll('#p-'+k+' [data-c],#p-'+k+' [data-f]')],all=cs.length&&cs.every(c=>c.checked);cs.forEach(c=>c.checked=!all);t.textContent=all?'全選':'取消全選'}
+  else if(a==='sa'){const cs=[...document.querySelectorAll('#p-'+k+' .selitem')],all=cs.length&&cs.every(c=>c.classList.contains('sel'));cs.forEach(c=>c.classList.toggle('sel',!all));t.textContent=all?'全選':'取消全選'}
   else if(a==='ai')aiMerge(k);
   else if(a==='ac'){AP=null;$('#ap'+k).innerHTML=''}
   else if(a==='ec'){ED=null;$('#ed'+k).innerHTML=''}
@@ -723,6 +727,23 @@ async function zoomImg(nid){
   else if(a==='ax')ankiOut(k);
 });
 
+['n','e'].forEach(k=>{
+  const p=$('#p-'+k);let T=null,F=false,X=0,Y=0;
+  const skip=e=>e.target.closest('button,input,select,textarea,label')||(e.target.closest('details')&&!e.target.closest('summary'));
+  p.addEventListener('pointerdown',e=>{
+    const it=e.target.closest('.selitem');if(!it||skip(e))return;
+    X=e.clientX;Y=e.clientY;clearTimeout(T);
+    T=setTimeout(()=>{F=true;it.classList.add('sel');vib(30)},2000);
+  });
+  ['pointerup','pointercancel'].forEach(t=>p.addEventListener(t,()=>{clearTimeout(T);if(F)setTimeout(()=>{F=false},150)}));
+  p.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-X)>10||Math.abs(e.clientY-Y)>10)clearTimeout(T)});
+  p.addEventListener('contextmenu',e=>{if(e.target.closest('.selitem')&&!skip(e))e.preventDefault()});
+  p.addEventListener('click',e=>{
+    if(F){F=false;e.preventDefault();e.stopPropagation();return}
+    const it=e.target.closest('.selitem');
+    if(it&&!skip(e)&&p.querySelector('.selitem.sel')){e.preventDefault();e.stopPropagation();it.classList.toggle('sel')}
+  },true);
+});
 /* ===== 檢索／AI 標題關鍵字／檔案上傳／Anki CSV ===== */
 let FD=null;
 const grams=s=>{s=tex(s).toLowerCase();const o=new Set();(s.match(/[a-z0-9]+/g)||[]).forEach(w=>{if(w.length>1)o.add(w)});const c=s.replace(/[^\u4e00-\u9fff]/g,'');for(let i=0;i<c.length-1;i++)o.add(c.slice(i,i+2));return o};
@@ -795,8 +816,8 @@ async function openFile(id){
   PG.end('已儲存 '+out.length+' 個檔案'+(bad?'，'+bad+' 個失敗':''),bad&&!out.length);
 }));
 function ankiOut(k){
-  const ch=[...document.querySelectorAll('#p-'+k+' [data-c]:checked')].map(c=>c.dataset.c);
-  const cf=[...document.querySelectorAll('#p-'+k+' [data-f]:checked')].map(c=>c.dataset.f);
+  const ch=[...document.querySelectorAll('#p-'+k+' .sel[data-c]')].map(c=>c.dataset.c);
+  const cf=[...document.querySelectorAll('#p-'+k+' .sel[data-f]')].map(c=>c.dataset.f);
   let a=notes().filter(n=>n.k===k);
   if(ch.length||cf.length)a=a.filter(n=>ch.includes(n.id)||cf.includes(n.fid));else if(V[k])a=a.filter(n=>n.fid===V[k]);
   a=a.filter(n=>n.body||!n.file);
