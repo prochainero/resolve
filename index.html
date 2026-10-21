@@ -631,7 +631,7 @@ function draw(k){
   const bar=mg+' <button class="b g sm" data-a="ai">'+(k==='n'?'AI 整理勾選 → 精華':'AI 整併勾選')+'</button>';
   let h,d;
   if(fid){
-    h='<div class="hd"><button class="b g sm" data-a="up">‹ 上一層資料夾</button></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label>'+bar+'</div>';
+    h='<div class="hd"><button class="b g sm" data-a="up">‹ 全部資料夾</button></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label>'+bar+'</div>';
     const r=N.filter(n=>n.fid===fid&&hit(n));
     d=list(r)+(q&&!r.length?'<button class="b g sm" data-a="gs">改搜全部資料夾</button>':'');
   }else if(!q){
@@ -672,6 +672,7 @@ async function zoomImg(nid){
 ['n','e'].forEach(k=>$('#p-'+k).onclick=e=>{
   const t=e.target.closest('[data-a]');if(!t)return;
   const a=t.dataset.a,i=t.dataset.i,s=$('#s'+k);
+  if(['of','up','tag','gs'].includes(a)){ED=null;$('#ed'+k).innerHTML=''}
   if(a==='of'){V[k]=i;s.value='';draw(k)}
   else if(a==='up'){V[k]='';draw(k)}
   else if(a==='tag'){V[k]='';s.value='#'+i;draw(k)}
