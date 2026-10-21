@@ -102,7 +102,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <p class="mut" style="margin-top:0">用 prochainero 登入 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token，只勾「gist」，並設定到期日。同步密碼自訂（建議 12 字以上），用來在瀏覽器內加密；筆記與 API 金鑰上傳前都會加密，GitHub 只看得到亂碼。忘記密碼就無法解開。每台裝置各輸入一次 token 和密碼即可。</p>
    <input id="gtok" type="password" placeholder="GitHub token（ghp_…）" autocomplete="off">
    <input id="gpw" type="password" placeholder="同步密碼" autocomplete="off" style="margin-top:8px">
-   <div class="row" style="margin-top:12px"><button class="b" id="gsave">儲存並同步</button><button class="b g" id="gup">上傳</button><button class="b g" id="gdown">下載</button></div>
+   <div class="row" style="margin-top:12px"><button class="b" id="gsave">儲存並同步</button><button class="b g" id="gup">上傳</button><button class="b g" id="gdown">下載</button><button class="b g" id="gcred">從 Google 帶入</button></div>
    <div class="mut" id="gstat" style="margin-top:8px"></div>
    <div class="row" style="margin-top:12px"><button class="b g" id="gbk">另存備份檔</button><label class="b g">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
    <p class="mut" style="margin:8px 0 0">會覆蓋資料前，系統會先請你另存備份檔。備份只含筆記文字、資料夾、API 設定與縮圖，通常不到幾 MB。</p>
@@ -157,7 +157,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 const $=s=>document.querySelector(s);
 const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_gd_amail'];
 /* 預設 Google 用戶端 ID：填在下面引號內，無痕分頁也不用重填。也可在網址後面加 ?cid=xxx.apps.googleusercontent.com */
-const DEFAULT_CID='';
+const DEFAULT_CID='90390991542-ltv461huqvqdvrqh0tm3beu1mcrtkb8h.apps.googleusercontent.com';
 const EFF_CID=(()=>{try{return (new URLSearchParams(location.search).get('cid')||'').trim()||DEFAULT_CID}catch(e){return DEFAULT_CID}})();
 const ls={get(k,d){try{const v=localStorage.getItem(k);if(k==='oc_gd_cid'&&!v&&EFF_CID)return EFF_CID;return v===null?d:v}catch(e){return k==='oc_gd_cid'&&EFF_CID?EFF_CID:d}},set(k,v){try{localStorage.setItem(k,v);if(SK.includes(k)){localStorage.setItem('oc_mod',String(Date.now()));if(window.schedPush)window.schedPush()}return true}catch(e){return false}}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -955,7 +955,7 @@ async function autoSync(){
     if(!r||L>s||s===0){await push();gmsg('已上傳')}else gmsg('已是最新');
   }catch(e){gmsg('同步失敗：'+gerr(e),1)}
 }
-$('#gsave').onclick=()=>{ls.set('oc_gh_tok',$('#gtok').value.trim());ls.set('oc_gh_pw',$('#gpw').value);if(!gOn()){gmsg('請填入 token 和同步密碼',1);return}autoSync()};
+$('#gsave').onclick=()=>{ls.set('oc_gh_tok',$('#gtok').value.trim());ls.set('oc_gh_pw',$('#gpw').value);if(!gOn()){gmsg('請填入 token 和同步密碼',1);return}if(ls.get('oc_gd_cid','')&&window.credSave)credSave().catch(()=>{});autoSync()};
 $('#gup').onclick=async()=>{if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}try{gmsg('檢查雲端…');const r=await pull(),s=+ls.get('oc_sync','0');if(r&&r.ts>s){if(!confirm('雲端有比這台更新的資料（可能來自其他裝置），上傳會覆蓋它。確定繼續？'))return gmsg('已取消上傳');backup('覆蓋前-雲端',r)}gmsg('上傳中…');await push();gmsg('已上傳')}catch(e){gmsg('上傳失敗：'+gerr(e),1)}};
 $('#gdown').onclick=async()=>{
   if(!gOn()){gmsg('請先填入並按「儲存並同步」',1);return}
@@ -978,7 +978,7 @@ function gdAuth(){return new Promise((res,rej)=>{
   const cid=ls.get('oc_gd_cid','');if(!cid)return rej(new Error('請先填入 Google 用戶端 ID'));
   if(!(window.google&&google.accounts))return rej(new Error('Google 登入元件還沒載入，請確認網路後重新整理再試'));
   google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCA(),
-    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GD.tok=r.access_token;GD.cid=cid;GD.sc=SCA();whoTok(r.access_token).then(m=>{if(m&&m!==ls.get('oc_gd_amail','')){ls.set('oc_gd_amail',m);gdFill()}}).catch(()=>{});GD.exp=Date.now()+(r.expires_in-60)*1000;res(GD.tok)},
+    callback:r=>{if(r.error)return rej(new Error('Google 授權失敗：'+r.error));GD.tok=r.access_token;GD.cid=cid;GD.sc=SCA();whoTok(r.access_token).then(m=>{if(m&&m!==ls.get('oc_gd_amail','')){ls.set('oc_gd_amail',m);gdFill()}}).catch(()=>{});GD.exp=Date.now()+(r.expires_in-60)*1000;res(GD.tok);setTimeout(()=>{if(window.credSync)credSync()},0)},
     error_callback:e=>rej(new Error('Google 授權視窗被關閉或被瀏覽器擋下（'+(e.type||'')+'）'))}).requestAccessToken({prompt:'select_account'});
 })}
 const gdf=async(u,o)=>{const t=await gdAuth();const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},(o||{}).headers)}));if(!r.ok)throw new Error(r.status===401?'Google 授權已過期，請再按一次':r.status===403?'Google 拒絕存取（確認已啟用 Drive API，且你是測試使用者）':'Google Drive 錯誤 '+r.status);return r};
@@ -1129,6 +1129,21 @@ $('#gdbclr').onclick=()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst')
   sv('oc_gd_accts',ACCTS().filter(x=>x!==v));delete GT[v];ls.set('oc_gd_dest','a');gdFill();$('#gdbst').innerHTML=showAccts()};
 $('#gdauto').checked=ls.get('oc_gd_auto','1')==='1';$('#gdauto').onchange=()=>{ls.set('oc_gd_auto',$('#gdauto').checked?'1':'0')};
 $('#gddest').onchange=()=>{ls.set('oc_gd_dest',$('#gddest').value)};
+/* ===== GitHub token / 同步密碼 存在 Google Drive 隱藏資料區（oc-cred.json），登入 Google 後自動帶入 ===== */
+const CRED_Q=GAPI+'files?spaces=appDataFolder&q='+encodeURIComponent("name='oc-cred.json' and trashed=false")+'&fields=files(id)';
+async function credFile(){const j=await(await gdf(CRED_Q)).json();return (j.files||[])[0]||null}
+async function credLoad(){const f=await credFile();if(!f)return null;try{const c=JSON.parse(await gdGet(f.id));return c&&c.tok&&c.pw?c:null}catch(e){return null}}
+async function credSave(){const tok=ls.get('oc_gh_tok',''),pw=ls.get('oc_gh_pw','');if(!tok||!pw)return;const f=await credFile();await gdPut('oc-cred.json',JSON.stringify({tok,pw}),f&&f.id)}
+let CREDB=false;
+async function credSync(force){if(CREDB)return;CREDB=true;try{
+  const c=await credLoad();
+  if(!gOn()||force){
+    if(c){ls.set('oc_gh_tok',c.tok);ls.set('oc_gh_pw',c.pw);$('#gtok').value=c.tok;$('#gpw').value=c.pw;gmsg('已從 Google 雲端帶入 token 和同步密碼');autoSync()}
+    else if(force)gmsg('Google 雲端裡還沒有存 token 和密碼。請先在這台填好並按「儲存並同步」',1)
+  }else if(!c){await credSave()}
+}catch(e){if(force)gmsg('帶入失敗：'+gerr(e),1)}finally{CREDB=false}}
+window.credSave=credSave;window.credSync=credSync;
+$('#gcred').onclick=()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim()||ls.get('oc_gd_cid',''));if(!ls.get('oc_gd_cid',''))return gmsg('請先在下方填入 Google 用戶端 ID',1);gmsg('連線 Google…');credSync(true)};
 $('#gdclean').onclick=async()=>{ls.set('oc_gd_cid',$('#gdcid').value.trim());try{
   gdmsg('檢查中…');
   const m=await gdList(),r=await gdPull(m);
