@@ -19,6 +19,7 @@ nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 button.b,label.b{display:inline-block;background:var(--acc);color:var(--on);border:0;border-radius:8px;padding:13px 18px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
 button.g,label.g{background:none;color:var(--acc);border:1px solid var(--acc)}
 button.b.sm,label.b.sm{padding:6px 12px;font-size:14px}
+.row>button.b.sm,.row>label.b.sm{line-height:20px;box-sizing:border-box}
 button:disabled{opacity:.5}
 input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -100,7 +101,7 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     </div>
     <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
    </div>
-  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。按住訊息 1 秒選取（可複選），按住 3 秒以上可框選訊息中的部分文字，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、編輯你的訊息後重送、存成筆記、AI製作筆記、檢索筆記本、重整）。要開新聊天或切換聊天，請長按最底下的「聊天」1 秒。存入時會讓你選資料夾（會記住上次的選擇）。聊天紀錄會存在這台裝置，並隨 Google Drive 同步（圖片不同步）。可用「附件」夾帶圖片、PDF（Gemini／Claude）或文字檔，也可以只送文字。</p>
+  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。按住訊息 1 秒選取（可複選），按住 3 秒以上可框選訊息中的部分文字，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、編輯你的訊息後重送、存成筆記、AI製作筆記、檢索筆記本、重整）。要開新聊天或切換聊天，請長按最底下的「聊天」1 秒。存入時會讓你選資料夾（會記住上次的選擇）。聊天紀錄會存在這台裝置，並在你改動後自動隨 Google Drive 同步（多個帳號會依時間合併）。聊天裡夾帶的圖片只留在原裝置，換裝置時會顯示「圖片僅存在原裝置」；存成筆記的圖片則會一起同步。可用「附件」夾帶圖片、PDF（Gemini／Claude）或文字檔，也可以只送文字。</p>
   </details>
   <details id="hist"><summary>聊天紀錄（<span id="hcnt">0</span>）</summary><div id="hlist" style="margin-top:8px"></div></details>
  </div>
@@ -720,7 +721,7 @@ function draw(k){
   const bar='';
   let h,d;
   if(fid){
-    h='<div class="hd"><button class="b g sm" data-a="up">‹ 上一層資料夾</button></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b g sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label></div>';
+    h='<div class="hd"><button class="b g sm" data-a="up">‹ 上一層資料夾</button></div><h3>📁 '+esc(cf.name)+'</h3><div class="row" style="margin-bottom:10px"><button class="b sm" data-a="nn">＋新增筆記</button><label class="b sm">＋上傳檔案（任何類型）<input id="up'+k+'" type="file" multiple hidden></label></div>';
     const r=N.filter(n=>n.fid===fid&&hit(n));
     d=list(r)+(q&&!r.length?'<button class="b g sm" data-a="gs">改搜全部資料夾</button>':'');
   }else if(!q){
