@@ -80,6 +80,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 #drw .it{border:1px solid var(--bd);margin:0 0 8px;cursor:pointer}
 .plus{flex:none;width:36px;height:36px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-radius:8px;color:var(--mut);font-size:22px;line-height:1;cursor:pointer}
 nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.q4{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;padding:8px 4px;font-size:13px;line-height:1.25;white-space:normal;text-align:center}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -116,13 +117,12 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
    <div style="margin-top:10px">
         <div class="mut" style="margin:14px 0 4px">多帳號分流：主帳號滿了時，新圖片改存到其他帳號的 Drive 並自動分享給主帳號。</div>
     <select id="gddest"><option value="a"></option></select>
-    <div class="row" style="margin-top:8px"><button class="b g" id="gdblogin">新增／登入儲存帳號</button><button class="b g" id="gdbclr">移除所選儲存帳號</button></div>
+    <div class="row" style="margin-top:8px;flex-wrap:nowrap;align-items:stretch;gap:6px"><button class="b g q4" id="gdblogin">新增／登入儲存帳號</button><button class="b g q4" id="gdbclr">移除所選儲存帳號</button><button class="b g q4" id="gbk">另存備份檔</button><label class="b g q4">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
     <div class="mut" id="gdbst" style="margin-top:8px"></div>
-    <div class="row" style="margin-top:14px"><button class="b g" id="gbk">另存備份檔</button><label class="b g">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
     <p class="mut" style="margin:8px 0 0">覆蓋資料前，系統會先請你另存備份檔。沒在用的雲端圖片會在「同步到 Drive」時自動清理，不需另外操作。</p>
    </div>
   </details>
-  <details class="card"><summary>Google Drive 同步（含圖片、檔案、聊天紀錄）</summary>
+  <details class="card"><summary>Google Drive 同步</summary>
    <div style="margin-top:10px">
     <p class="mut" style="margin-top:0">資料存在 Drive 的隱藏資料夾（Drive 介面看不到，只有這個網頁的授權能讀）。「同步到 Drive」會自動判斷：Drive 較新就下載、這台較新就上傳；上傳後會順便清掉沒在用的雲端圖片。授權約 1 小時有效，過期請再按一次。你也可以直接在「筆記本」「AI 摘要」頁按同步。</p>
     <div class="row"><button class="b" id="gdsync">☁ 同步到 Drive</button><button class="b g" id="gdspb">查看空間</button></div>
@@ -133,7 +133,7 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   </details>
   <details class="card" id="exd"><summary>匯出 CSV（Anki）</summary>
    <div style="margin-top:10px">
-    <select id="exk"><option value="n">筆記本（普通筆記）</option><option value="e">AI 摘要</option></select>
+    <select id="exk"><option value="n">筆記本</option><option value="e">AI 摘要</option></select>
     <div class="row" style="margin:8px 0"><button class="b g sm" id="exall">全選</button><button class="b g sm" id="exclr">取消全選</button><span class="mut" id="excnt"></span></div>
     <div id="exlist" style="max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px"></div>
     <button class="b" id="exgo" style="margin-top:10px">匯出選取的筆記</button>
@@ -161,9 +161,9 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
  <div class="row hide" id="selbar" style="margin:0 0 8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button><button class="b g sm" id="snipclr">清除框選</button><button class="b g sm" id="selfind">🔍 檢索筆記本</button><button class="b g sm" id="sum">存筆記</button><button class="b g sm" id="aib">AI筆記</button></div>
  <div id="qbox" class="hide"><div class="qtx" id="qtx"></div><button id="qx" aria-label="取消引用">✕</button></div>
  <div id="attbox" class="row hide" style="margin:0 0 6px"></div>
- <div class="row" style="flex-wrap:nowrap;margin:0;align-items:flex-end;gap:6px"><label class="plus" aria-label="上傳附件">+<input id="attf" type="file" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.html,.xml,.log,.js,.py,.css,.ts,.yml,.yaml,text/*" hidden></label><textarea id="q" rows="1" placeholder="輸入訊息…"></textarea><button class="b" id="send" style="flex:none">📷 拍照</button><input id="cam" type="file" accept="image/*" capture="environment" hidden></div>
+ <div class="row" style="flex-wrap:nowrap;margin:0;align-items:flex-end;gap:6px"><label class="plus" aria-label="上傳附件">+<input id="attf" type="file" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.html,.xml,.log,.js,.py,.css,.ts,.yml,.yaml,text/*" hidden></label><textarea id="q" rows="1" placeholder="輸入訊息…"></textarea><button class="b" id="send" style="flex:none">拍照</button><input id="cam" type="file" accept="image/*" capture="environment" hidden></div>
 </div></div>
-<div id="cmenu" class="hide"><button id="reset">＋ 新聊天</button><button id="swc">💬 切換聊天</button></div>
+<div id="cmenu" class="hide"><button id="reset">新聊天</button><button id="swc">切換聊天</button></div>
 <div id="dbk" class="hide"></div><aside id="drw"></aside>
 <div id="pg" class="hide" role="status" aria-live="polite"><div class="t"><span id="pgl"></span><b id="pgr"></b></div><div class="tr"><div id="pgf" class="fl"></div></div></div>
 <nav><button data-t="learn" class="on">聊天</button><button data-t="n">筆記本</button><button data-t="e">AI 摘要</button><button data-t="set">設定</button></nav>
@@ -171,7 +171,7 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 <script>
 /* © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 */
 const $=s=>document.querySelector(s);
-const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_gd_amail','oc_chats'];
+const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_chats'];
 /* 預設 Google 用戶端 ID：填在下面引號內，無痕分頁也不用重填。也可在網址後面加 ?cid=xxx.apps.googleusercontent.com */
 const DEFAULT_CID='90390991542-ltv461huqvqdvrqh0tm3beu1mcrtkb8h.apps.googleusercontent.com';
 const EFF_CID=(()=>{try{return (new URLSearchParams(location.search).get('cid')||'').trim()||DEFAULT_CID}catch(e){return DEFAULT_CID}})();
@@ -424,7 +424,7 @@ let CMT=0,LPN=false;
 document.addEventListener('click',e=>{if(!e.target.closest('#cmenu')&&Date.now()-CMT>500)$('#cmenu').classList.add('hide')});
 $('#reset').onclick=()=>{document.querySelector('nav button[data-t="learn"]').click();clearQuote();S.att=[];drawAtt();$('#cmenu').classList.add('hide');if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();S.snip='';$('#status').textContent='';render();drawHist()};
 const autoH=()=>{const q=$('#q');q.style.height='auto';q.style.height=Math.min(q.scrollHeight,120)+'px'};
-const updSend=()=>{$('#send').textContent=($('#q').value.trim()||S.att.length)?'送出':'📷 拍照'};
+const updSend=()=>{$('#send').textContent=($('#q').value.trim()||S.att.length)?'送出':'拍照'};
 $('#q').addEventListener('input',()=>{autoH();updSend()});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#send').click()}});
 function drawAtt(){const b=$('#attbox');b.classList.toggle('hide',!S.att.length);b.innerHTML=S.att.map((a,i)=>'<span class="tag" style="margin:0;border-color:var(--acc);color:var(--fg)">'+(a.kind==='img'?'🖼 ':'📎 ')+esc(a.name.slice(0,18))+' <b data-ax="'+i+'" style="cursor:pointer;padding:0 4px">✕</b></span>').join('');updSend()}
@@ -1057,6 +1057,8 @@ gcAll();
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 
 /* ===== Google Drive 同步（加密後存到 appDataFolder，含圖片與檔案） ===== */
+const gdS=()=>{const a=ls.get('oc_gdsync_acct','');return !a||a===ls.get('oc_gd_amail','')?+ls.get('oc_gdsync','0'):0};
+const gdMark=ts=>{ls.set('oc_gdsync',String(ts));ls.set('oc_gdsync_acct',ls.get('oc_gd_amail',''))};
 const BEN=()=>{try{return JSON.parse(ls.get('oc_gd_accts','[]')||'[]').length>0}catch(e){return false}};
 const SCA=()=>'https://www.googleapis.com/auth/drive.appdata'+(BEN()?' https://www.googleapis.com/auth/drive.readonly':'');
 const GD={tok:'',exp:0},PW=()=>ls.get('oc_gh_pw','')||prompt('Drive 上有舊版加密資料，請輸入當時的同步密碼')||'';
@@ -1138,7 +1140,7 @@ async function gdUp(m,silent){
   }
   PG.set(tot,tot,'Drive：上傳筆記資料',true);
   await gdPut('oc.json',JSON.stringify({ts,data}),m['oc.json']);
-  ls.set('oc_gdsync',String(ts));
+  gdMark(ts);
   PG.end('Drive 上傳完成'+(up?'，新增 '+up+' 個檔案':'')+(wait?'（'+wait+' 個等待授權）':''));
   return{up,skip,wait,fb};
   }catch(e){PG.end('Drive 上傳失敗：'+gerr(e),1);throw e}finally{GDBUSY=false}
@@ -1150,8 +1152,9 @@ async function gdAuto(){
   const cid=ls.get('oc_gd_cid','');
   if(!(GD.tok&&Date.now()<GD.exp&&GD.cid===cid&&GD.sc===SCA())){gdmsg('Drive 授權已過期，自動上傳暫停。請按一次「同步到 Drive」重新授權',1);return}
   try{
+    {const a=ls.get('oc_gdsync_acct','');if(a&&a!==ls.get('oc_gd_amail','')){gdmsg('已切換 Google 帳號，自動上傳暫停。要把資料放進這個帳號，請按「同步到 Drive」。',1);return}}
     const m=await gdList(),r=await gdPull(m);
-    if(r&&r.ts>+ls.get('oc_gdsync','0')){gdmsg('Drive 上有更新的資料（可能來自其他裝置），自動上傳已暫停。請按「同步到 Drive」處理',1);return}
+    if(r&&r.ts>gdS()){gdmsg('Drive 上有更新的資料（可能來自其他裝置），自動上傳已暫停。請按「同步到 Drive」處理',1);return}
     const o=await gdUp(m,true);
     gdmsg('已自動上傳 '+new Date().toLocaleTimeString('zh-TW')+(o.up?'，新增 '+o.up+' 個檔案':'')+(o.wait?'；'+o.wait+' 個檔案等待儲存帳號授權，請按「同步到 Drive」':''));
   }catch(e){gdmsg('自動上傳失敗：'+gerr(e),1)}
@@ -1216,7 +1219,7 @@ $('#gdbclr').onclick=()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst')
 $('#gdauto').checked=ls.get('oc_gd_auto','1')==='1';$('#gdauto').onchange=()=>{ls.set('oc_gd_auto',$('#gdauto').checked?'1':'0')};
 $('#gddest').onchange=()=>{ls.set('oc_gd_dest',$('#gddest').value)};
 /* ===== 以 Google 登入／合併同步／自動清理 ===== */
-$('#glogin').onclick=async()=>{try{gdmsg('登入中…');const em=await whoTok(await gdAuth());ls.set('oc_gd_amail',em);gdFill();gdmsg('已登入：'+em)}catch(e){gdmsg('失敗：'+gerr(e),1)}};
+$('#glogin').onclick=async()=>{try{gdmsg('登入中…');GD.tok='';const em=await whoTok(await gdAuth());ls.set('oc_gd_amail',em);gdFill();gdmsg('已登入：'+em)}catch(e){gdmsg('失敗：'+gerr(e),1)}};
 async function gdFetchImgs(m){
   let n=0,miss=0,le='';const list=[];
   for(const x of notes().filter(x=>x.iid)){
@@ -1256,7 +1259,8 @@ async function gdSync(){
   if(SYNCING||GDBUSY)return;SYNCING=true;
   try{
     gdmsg('檢查 Drive…');
-    const m=await gdList(),r=await gdPull(m),s=+ls.get('oc_gdsync','0'),L=+ls.get('oc_mod','0');
+    ls.set('oc_gd_amail',await mailA());gdFill();
+    const m=await gdList(),r=await gdPull(m),s=gdS(),L=+ls.get('oc_mod','0');
     let mode='keep',o=null,sw=null;
     if(!r)mode='up';
     else if(r.ts>s){
@@ -1266,7 +1270,7 @@ async function gdSync(){
       else{backup('覆蓋前-Drive',r);mode='up'}
     }else if(L>s)mode='up';
     else{for(const x of notes()){if(x.iid&&!m['img_'+x.iid]&&await imgGet(x.iid)){mode='up';break}}}
-    if(mode==='down'){if(hasLocal())backup('覆蓋前-本機');applyRemote(r);ls.set('oc_gdsync',String(r.ts))}
+    if(mode==='down'){if(hasLocal())backup('覆蓋前-本機');applyRemote(r);gdMark(r.ts)}
     else if(mode==='up'){o=await gdUp(m);sw=await gdSweep()}
     const f=await gdFetchImgs(m);
     draw('n');draw('e');drawHist();
