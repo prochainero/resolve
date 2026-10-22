@@ -6,9 +6,10 @@
 <!-- © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 -->
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Chatnote</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%232a8f76%22/%3E%3Cstop offset=%221%22 stop-color=%22%230f4c3f%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M10.5 7H19.5L26 13.5V21.5a2.5 2.5 0 0 1-2.5 2.5H15.2L11 27.6V24H10.5a2.5 2.5 0 0 1-2.5-2.5V9.5a2.5 2.5 0 0 1 2.5-2.5Z%22 fill=%22%23fff%22/%3E%3Cpath d=%22M19.5 7V13.5H26Z%22 fill=%22%231f6f5c%22 opacity=%22.3%22/%3E%3Cpath d=%22M11.5 12h5.5M11.5 16h11M11.5 19.8h7%22 stroke=%22%231f6f5c%22 stroke-width=%221.7%22 stroke-linecap=%22round%22 fill=%22none%22/%3E%3C/svg%3E">
 <style>
-:root{--bg:#f3f5f2;--fg:#17201c;--card:#fff;--mut:#66716b;--acc:#1f6f5c;--on:#fff;--bd:#d8ded9;--me:#dcebe5;--warn:#a4452c;color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root{--bg:#121714;--fg:#e8eeea;--card:#1c2420;--mut:#93a09a;--acc:#5fc4a6;--on:#0b1410;--bd:#2c3731;--me:#25382f;--warn:#e58a6c}}
+:root{--bg:#f3f5f2;--fg:#17201c;--card:#fff;--mut:#66716b;--acc:#1f6f5c;--on:#fff;--bd:#d8ded9;--me:#dcebe5;--warn:#a4452c;--acc2:#0f4c3f;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{--bg:#121714;--fg:#e8eeea;--card:#1c2420;--mut:#93a09a;--acc:#5fc4a6;--on:#0b1410;--bd:#2c3731;--me:#25382f;--warn:#e58a6c;--acc2:#2c9a7e}}
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.65 system-ui,"Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--fg);padding-bottom:calc(var(--nh,56px) + var(--dh,0px) + 20px)}
 main{max-width:720px;margin:0 auto;padding:14px}
@@ -70,7 +71,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 #pg .tr{height:8px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:6px}
 #pg .fl{height:100%;width:0;background:var(--acc);transition:width .15s}
 .it details[open]{border:1px solid var(--acc);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--bg)}
-#top{display:flex;align-items:center;gap:10px;margin:0 0 10px}#top b{font-size:21px;letter-spacing:.3px}
+#top{display:flex;align-items:center;gap:10px;margin:0 0 10px}#top b{font-size:22px;font-weight:700;letter-spacing:-.4px;font-family:ui-rounded,"SF Pro Rounded","Avenir Next","Nunito","Noto Sans TC",system-ui,sans-serif}
 #dock textarea{resize:none;max-height:120px;min-height:44px}
 #cmenu{position:fixed;left:8px;bottom:calc(var(--nh,56px) + 8px);z-index:40;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 #cmenu.hide{display:none}
@@ -87,7 +88,7 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </head>
 <body>
 <main>
-<header id="top"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--acc)"/><path d="M8 8h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H15l-5 4v-4H8a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" fill="var(--on)"/><path d="M11 12.5h10M11 16.5h6" stroke="var(--acc)" stroke-width="1.8" stroke-linecap="round"/></svg><b>Chatnote</b></header>
+<header id="top"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><defs><linearGradient id="lgm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--acc)"/><stop offset="1" stop-color="var(--acc2)"/></linearGradient></defs><rect width="34" height="34" rx="10" fill="url(#lgm)"/><path d="M10.5 7H19.5L26 13.5V21.5a2.5 2.5 0 0 1-2.5 2.5H15.2L11 27.6V24H10.5a2.5 2.5 0 0 1-2.5-2.5V9.5a2.5 2.5 0 0 1 2.5-2.5Z" fill="var(--on)"/><path d="M19.5 7V13.5H26Z" fill="var(--acc)" opacity=".3"/><path d="M11.5 12h5.5M11.5 16h11M11.5 19.8h7" stroke="var(--acc)" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg><b>chatnote</b></header>
 <section id="p-learn">
  <div class="card">
   <details id="cfg">
@@ -116,17 +117,16 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   <div class="card"><button class="b" id="glogin" style="width:100%">Google 登入</button><div class="mut" id="gdcur" style="margin-top:8px;word-break:break-all"></div></div>
   <details class="card"><summary>帳號管理</summary>
    <div style="margin-top:10px">
-        <div class="mut" style="margin:14px 0 4px">多帳號分流：主帳號滿了時，新圖片改存到其他帳號的 Drive 並自動分享給主帳號。</div>
+        <div class="mut" style="margin:14px 0 4px">所有帳號互通：第一個同步的帳號是主帳，筆記只存主帳的 Drive，其他帳號都能編輯，沒有誰的資料優先（逐則比最後修改時間）。帳號名單會隨筆記同步，在任何一個帳號新增或移除，其他帳號下次同步就會跟上。主帳滿了時，新圖片可改存到其他帳號。</div>
     <select id="gddest"><option value="a"></option></select>
-    <div class="row" style="margin-top:8px;flex-wrap:nowrap;align-items:stretch;gap:6px"><button class="b g q4" id="gdblogin">新增／登入儲存帳號</button><button class="b g q4" id="gdbclr">移除所選儲存帳號</button><button class="b g q4" id="gbk">另存備份檔</button><label class="b g q4">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
-    <div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:6px"><input id="shmail" type="email" placeholder="要共用資料夾的另一個 Gmail" autocomplete="off"><button class="b g sm" id="shbtn" style="flex:none">分享（可編輯）</button></div>
+    <div class="row" style="margin-top:8px;flex-wrap:nowrap;align-items:stretch;gap:6px"><button class="b g q4" id="gdblogin">新增帳號</button><button class="b g q4" id="gdbclr">移除所選帳號</button><button class="b g q4" id="gbk">另存備份檔</button><label class="b g q4">匯入備份<input id="gimp" type="file" accept=".json,application/json" hidden></label></div>
     <div class="mut" id="gdbst" style="margin-top:8px"></div>
     <p class="mut" style="margin:8px 0 0">兩個帳號都可以編輯；同一則筆記兩邊都改過時，留下較新的。「匯入備份」仍會覆蓋這台裝置的資料。</p>
    </div>
   </details>
   <details class="card"><summary>Google Drive 同步</summary>
    <div style="margin-top:10px">
-    <p class="mut" style="margin-top:0">筆記、圖片和聊天紀錄放在你 Drive 裡的「oc-notes-shared」資料夾。要讓另一個帳號也能同步，先到「帳號管理」輸入它的 Gmail 並按「分享（可編輯）」，再用那個帳號登入同步。同步會逐則比對最後修改時間，新的留下、不會整份覆蓋；刪除也會一起同步。上傳後會順便清掉沒在用的雲端圖片。授權約 1 小時有效，過期請再按一次。你也可以直接在「筆記本」「AI 摘要」頁按同步。</p>
+    <p class="mut" style="margin-top:0">筆記、圖片和聊天紀錄放在你 Drive 裡的「oc-notes-shared」資料夾。要讓另一個帳號也能同步，先到「帳號管理」按「新增帳號」並登入它，主資料夾會自動共用給它（可編輯），再用那個帳號登入同步即可。同步會逐則比對最後修改時間，新的留下、不會整份覆蓋；刪除也會一起同步。上傳後會順便清掉沒在用的雲端圖片。授權約 1 小時有效，過期請再按一次。你也可以直接在「筆記本」「AI 摘要」頁按同步。</p>
     <div class="row"><button class="b" id="gdsync">☁ 同步到 Drive</button><button class="b g" id="gdspb">查看空間</button></div>
     <div class="mut" id="gdsp" style="margin-top:8px"></div>
     <label style="display:flex;gap:10px;align-items:center;margin:12px 0 6px"><input type="checkbox" id="gdauto" style="width:22px;flex:none" checked><span>改完筆記自動上傳到 Drive（授權有效時）</span></label>
@@ -173,7 +173,7 @@ nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 <script>
 /* © 2026 Prochainero 保留所有權利。未經書面允許，禁止複製、修改、散布或用於商業用途。 */
 const $=s=>document.querySelector(s);
-const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_chats'];
+const SK=['oc_notes','oc_fold','oc_last','oc_apis','oc_act','oc_think','oc_gd_cid','oc_gd_cids','oc_gd_ben','oc_gd_dest','oc_gd_bmail','oc_gd_accts','oc_gd_loc','oc_gd_cnames','oc_chats','oc_gd_amt','oc_gd_adel','oc_gd_main'];
 /* 預設 Google 用戶端 ID：填在下面引號內，無痕分頁也不用重填。也可在網址後面加 ?cid=xxx.apps.googleusercontent.com */
 const DEFAULT_CID='90390991542-ltv461huqvqdvrqh0tm3beu1mcrtkb8h.apps.googleusercontent.com';
 const EFF_CID=(()=>{try{return (new URLSearchParams(location.search).get('cid')||'').trim()||DEFAULT_CID}catch(e){return DEFAULT_CID}})();
@@ -1067,7 +1067,7 @@ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 /* ===== Google Drive 同步（加密後存到 appDataFolder，含圖片與檔案） ===== */
 const gdS=()=>{const a=ls.get('oc_gdsync_acct','');return !a||a===ls.get('oc_gd_amail','')?+ls.get('oc_gdsync','0'):0};
 const gdMark=ts=>{ls.set('oc_gdsync',String(ts));ls.set('oc_gdsync_acct',ls.get('oc_gd_amail',''))};
-const BEN=()=>{try{return JSON.parse(ls.get('oc_gd_accts','[]')||'[]').length>0}catch(e){return false}};
+const BEN=()=>OTHERS().length>0;
 const SCA=()=>'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive';
 const GD={tok:'',exp:0},PW=()=>ls.get('oc_gh_pw','')||prompt('Drive 上有舊版加密資料，請輸入當時的同步密碼')||'';
 function gdAuth(){return new Promise((res,rej)=>{
@@ -1081,11 +1081,23 @@ function gdAuth(){return new Promise((res,rej)=>{
 const gdf=async(u,o)=>{const t=await gdAuth();const r=await fetch(u,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},(o||{}).headers)}));if(!r.ok)throw new Error(r.status===401?'Google 授權已過期，請再按一次':r.status===403?'Google 拒絕存取（確認已啟用 Drive API，且你是測試使用者）':'Google Drive 錯誤 '+r.status);return r};
 const GDSZ={};
 const OCF='oc-notes-shared';
+/* 主資料夾解析：成員一律用「主帳擁有」的共用資料夾，不會各自建一份；第一次沒有主帳時，看得到別人共用的就加入，否則自己當主帳 */
 async function gdFolder(){
+  const me=ME()||await mailA();
   const q=encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='"+OCF+"' and trashed=false");
-  const j=await(await gdf(GAPI+'files?q='+q+'&fields=files(id,createdTime)&orderBy=createdTime')).json();
-  if(j.files&&j.files[0])return j.files[0].id;
-  return (await(await gdf(GAPI+'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:OCF,mimeType:'application/vnd.google-apps.folder'})})).json()).id;
+  const fs=((await(await gdf(GAPI+'files?q='+q+'&fields=files(id,createdTime,ownedByMe,owners(emailAddress))&orderBy=createdTime')).json()).files)||[];
+  const own=fs.filter(f=>f.ownedByMe),oth=fs.filter(f=>!f.ownedByMe),ow=f=>(((f.owners||[])[0]||{}).emailAddress||'').toLowerCase();
+  const main=MAIN();let pick=null;
+  if(main&&main!==me){pick=oth.find(f=>ow(f)===main)||null}
+  else if(main&&main===me){pick=own[0]||null}
+  else{
+    if(oth[0]){pick=oth[0];ls.set('oc_gd_main',ow(oth[0]))}
+    else if(own[0]){pick=own[0];ls.set('oc_gd_main',me)}
+  }
+  if(pick)return pick.id;
+  if(MAIN()&&MAIN()!==me)throw new Error('找不到主帳號 '+MAIN()+' 共用給這個帳號的資料夾。請主帳號先同步一次（它會依名單自動共用）；若主帳尚未把這個帳號加入名單，請在主帳的「帳號管理」按「新增帳號」。');
+  const id=(await(await gdf(GAPI+'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:OCF,mimeType:'application/vnd.google-apps.folder'})})).json()).id;
+  ls.set('oc_gd_main',me);return id;
 }
 async function gdList(fid){
   const m={},mf={},mx={};
@@ -1133,9 +1145,9 @@ const unpackImg=o=>{if(o.t==='s')return o.v;const parts=[],C=4*786432;for(let i=
 const unwrap=async t=>{const j=JSON.parse(t);if(j&&j.s&&j.i&&j.d){const pw=PW();if(!pw)throw new Error('Drive 上有舊版加密資料，需要當時的同步密碼才能讀取');return dec(t,pw)}return j};
 const gdPull=async m=>m['oc.json']?unwrap(await gdGet(m['oc.json'])):null;
 let GDBUSY=false;
-const gdDest=()=>ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');
+const gdDest=()=>ls.get('oc_gd_dest','')||(OTHERS()[0]||'a');
 async function gdUpImgs(fid,mf,mx,silent){
-  let up=0,skip=0,wait=0,fb=0;const dest=gdDest(),toX=dest!=='a'&&ACCTS().includes(dest);let xf=null;const getXf=async()=>{if(xf)return xf;const am=await mailA();if(am===dest)throw new Error('選的儲存帳號就是目前登入的帳號，請改選別的帳號');return xf=await gtFolder(dest,am)};
+  let up=0,skip=0,wait=0,fb=0;const dest=gdDest(),toX=dest!=='a'&&OTHERS().includes(dest);let xf=null;const getXf=async()=>{if(xf)return xf;const am=await mailA();if(am===dest)throw new Error('選的儲存帳號就是目前登入的帳號，請改選別的帳號');return xf=await gtFolder(dest,MEM())};
   const list=[];
   for(const n of notes().filter(x=>x.iid)){
     const nm='img_'+n.iid;if(mf[nm]||mx[nm]||LOC()[n.iid])continue;
@@ -1177,7 +1189,27 @@ async function gdSpace(){const el=$('#gdsp');try{el.textContent='讀取空間…
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}}
 $('#gdspb').onclick=gdSpace;
 const ACCTS=()=>J('oc_gd_accts',[]),NAMES=()=>J('oc_gd_cnames',{}),LOC=()=>J('oc_gd_loc',{});
-function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am:'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gddest').innerHTML='<option value="a">'+esc(ls.get('oc_gd_amail','')||'主帳號（登入後顯示信箱）')+'</option>'+[...new Set(ACCTS())].filter(e=>e!==ls.get('oc_gd_amail','')).map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(ACCTS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}}
+/* ===== 帳號名單：每個帳號有「加入時間」，移除時留「移除時間」，兩邊合併時比時間，新的算數（沒有誰優先）===== */
+const AMT=()=>J('oc_gd_amt',{}),ADEL=()=>J('oc_gd_adel',{});
+const ME=()=>ls.get('oc_gd_amail',''),MAIN=()=>ls.get('oc_gd_main','');
+const OTHERS=()=>[...new Set([...ACCTS(),MAIN()])].filter(e=>e&&e!==ME());
+const MEM=()=>[...new Set([ME(),MAIN(),...ACCTS()])].filter(Boolean);
+function acctAdd(em){const a=ACCTS(),t=AMT(),d=ADEL();if(!a.includes(em))a.push(em);t[em]=Date.now();delete d[em];sv('oc_gd_amt',t);sv('oc_gd_adel',d);sv('oc_gd_accts',a)}
+function acctDel(em){const a=ACCTS().filter(x=>x!==em),t=AMT(),d=ADEL();d[em]=Date.now();delete t[em];sv('oc_gd_amt',t);sv('oc_gd_adel',d);sv('oc_gd_accts',a)}
+function accOut(){return{main:MAIN(),list:ACCTS(),t:AMT(),d:ADEL()}}
+function mergeAccts(r){
+  if(!r)return;
+  const t=AMT(),d=ADEL(),now=Date.now();
+  Object.keys(r.t||{}).forEach(e=>{t[e]=Math.max(t[e]||0,r.t[e])});
+  Object.keys(r.d||{}).forEach(e=>{d[e]=Math.max(d[e]||0,r.d[e])});
+  (r.list||[]).forEach(e=>{if(!t[e]&&!d[e])t[e]=1});
+  ACCTS().forEach(e=>{if(!t[e]&&!d[e])t[e]=1});
+  const list=Object.keys(t).filter(e=>(t[e]||0)>(d[e]||0));
+  Object.keys(d).forEach(e=>{if(now-d[e]>60*864e5&&!((t[e]||0)>d[e]))delete d[e]});
+  try{localStorage.setItem('oc_gd_amt',JSON.stringify(t));localStorage.setItem('oc_gd_adel',JSON.stringify(d));localStorage.setItem('oc_gd_accts',JSON.stringify(list));
+    if(r.main&&!MAIN())localStorage.setItem('oc_gd_main',r.main)}catch(e){}
+}
+function gdFill(){{const am=ls.get('oc_gd_amail','');$('#gdcur').textContent=am?'目前登入的 Google 帳號：'+am+(MAIN()?(MAIN()===am?'（主帳）':'（成員；主帳：'+MAIN()+'）'):''):'還沒登入 Google（按一次上傳或下載後，這裡會顯示你的信箱）'}$('#gddest').innerHTML='<option value="a">'+esc(ls.get('oc_gd_amail','')||'主帳號（登入後顯示信箱）')+'</option>'+OTHERS().map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');{const d=ls.get('oc_gd_dest','')||(OTHERS()[0]||'a');$('#gddest').value=d;if($('#gddest').value!==d)$('#gddest').value='a'}}
 gdFill();
 const GAPI='https://www.googleapis.com/drive/v3/';
 const GT={};
@@ -1201,29 +1233,42 @@ const gtf=async(em,u,o)=>{const t=await gtTok(em);const r=await fetch(u,Object.a
 async function gdLsAll(f,qs){const out=[];let pt='';do{const j=await(await f(GAPI+'files?'+qs+'&pageSize=1000&fields=nextPageToken,files(id,name,size)'+(pt?'&pageToken='+pt:''))).json();out.push(...(j.files||[]));pt=j.nextPageToken||''}while(pt);return out}
 const FQ=encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and trashed=false");
 async function gtFindFolder(em){const j=await(await gtf(em,GAPI+'files?q='+FQ+'&fields=files(id)')).json();return j.files&&j.files[0]?j.files[0].id:''}
-async function gtFolder(em,aMail){
+async function gtFolder(em,mails){
   let id=await gtFindFolder(em);
   if(!id)id=(await(await gtf(em,GAPI+'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'oc-sync-data',mimeType:'application/vnd.google-apps.folder'})})).json()).id;
   const p=await(await gtf(em,GAPI+'files/'+id+'/permissions?fields=permissions(emailAddress,role)')).json();
-  if(!(p.permissions||[]).some(x=>(x.emailAddress||'').toLowerCase()===aMail&&(x.role==='writer'||x.role==='owner')))
-    await gtf(em,GAPI+'files/'+id+'/permissions?sendNotificationEmail=false',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',role:'writer',emailAddress:aMail})});
+  const have=new Set((p.permissions||[]).filter(x=>x.role==='writer'||x.role==='owner').map(x=>(x.emailAddress||'').toLowerCase()));
+  for(const m of [...new Set(mails||[])]){if(!m||m===em||have.has(m))continue;
+    await gtf(em,GAPI+'files/'+id+'/permissions?sendNotificationEmail=false',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',role:'writer',emailAddress:m})})}
   return id}
 function gtPut(em,fid,name,blob,up){
   return upNew(()=>gtTok(em),{name,parents:[fid]},typeof blob==='string'?new Blob([blob]):blob,up,st=>{if(st===401)delete GT[em];return new Error(st===401?em+' 授權已過期，請再按一次':st===403?em+' 拒絕存取（確認已加入測試使用者，或該帳號空間已滿）':em+' Drive 錯誤 '+st)})}
 const setLoc=(iid,em)=>{const l=LOC();l[iid]=em;sv('oc_gd_loc',l)};
-function showAccts(){return ACCTS().filter(e=>e!==ls.get('oc_gd_amail','')).map(e=>esc(e)+(GT[e]&&Date.now()<GT[e].exp?'（已登入）':'（需要時自動切換）')).join('<br>')||'還沒有儲存帳號'}
+function showAccts(){return OTHERS().map(e=>esc(e)+(GT[e]&&Date.now()<GT[e].exp?'（已登入）':'（需要時自動切換）')).join('<br>')||'還沒有儲存帳號'}
+/* 加入帳號的順序：①本機名單加上（含時間）→ ②它的儲存資料夾建立並共用給所有成員 → ③同步：主資料夾共用給它、名單寫進 notes.json */
 $('#gdblogin').onclick=async()=>{const el=$('#gdbst');try{
-  el.textContent='請在視窗選要當儲存空間的帳號…';
+  el.textContent='請在視窗選要加入的帳號…';
   const n=await gtLogin('');const em=await whoTok(n.tok);GT[em]=n;
-  const a=ACCTS();if(em!==ls.get('oc_gd_amail','')&&!a.includes(em)){a.push(em);sv('oc_gd_accts',a)}
-  let c=0;const fid=await gtFindFolder(em);
-  if(fid){const l=LOC();(await gdLsAll((u,o)=>gtf(em,u,o),'q='+encodeURIComponent("'"+fid+"' in parents and trashed=false"))).forEach(f=>{if(/^img_/.test(f.name)){l[f.name.slice(4)]=em;c++}});sv('oc_gd_loc',l)}
+  if(em===ME()){el.textContent='這就是目前登入的帳號，不用加入';return}
+  if(em===MAIN()){el.textContent='這是主帳號，已經在名單中';return}
+  acctAdd(em);
+  const fid=await gtFolder(em,MEM());
+  let c=0;const l=LOC();
+  (await gdLsAll((u,o)=>gtf(em,u,o),'q='+encodeURIComponent("'"+fid+"' in parents and trashed=false"))).forEach(f=>{if(/^img_/.test(f.name)){l[f.name.slice(4)]=em;c++}});sv('oc_gd_loc',l);
   const q=(await(await gtf(em,GAPI+'about?fields=storageQuota')).json()).storageQuota||{};
-  gdFill();el.innerHTML='已加入 '+esc(em)+'：用量 '+fmtB(q.usage)+(q.limit?' / '+fmtB(q.limit):'')+'，已記錄既有圖片 '+c+' 個<br>'+showAccts();
+  gdFill();
+  let sh;
+  if(GD.tok&&Date.now()<GD.exp){await gdSync(true);sh='；主資料夾已共用給它，名單已寫入雲端'}else sh='；主資料夾共用與名單會在下次「同步到 Drive」時完成';
+  el.innerHTML='已加入 '+esc(em)+'：用量 '+fmtB(q.usage)+(q.limit?' / '+fmtB(q.limit):'')+'，已記錄既有圖片 '+c+' 個'+esc(sh)+'<br>'+showAccts();
 }catch(e){el.innerHTML='<span class="err">'+esc(gerr(e))+'</span>'}};
-$('#gdbclr').onclick=()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst').textContent='請先在上方選要移除的儲存帳號';return}
-  if(!confirm('從清單移除 '+v+'？不會刪除它 Drive 裡的資料，之後清理圖片時也不會處理它。'))return;
-  sv('oc_gd_accts',ACCTS().filter(x=>x!==v));delete GT[v];ls.set('oc_gd_dest','a');gdFill();$('#gdbst').innerHTML=showAccts()};
+/* 移除帳號：①名單留「移除時間」→ ②同步時寫進 notes.json → ③主帳收回主資料夾共用（成員移除別人時，由主帳下次同步收回） */
+$('#gdbclr').onclick=async()=>{const v=$('#gddest').value;if(!v||v==='a'){$('#gdbst').textContent='請先在上方選要移除的帳號';return}
+  if(v===MAIN()){$('#gdbst').textContent='主帳號不能移除';return}
+  if(!confirm('從名單移除 '+v+'？它會失去主資料夾的編輯權（不會刪除它 Drive 裡的資料）。'))return;
+  acctDel(v);delete GT[v];ls.set('oc_gd_dest','a');gdFill();
+  let sh;
+  if(GD.tok&&Date.now()<GD.exp){await gdSync(true);sh=ME()===MAIN()?'；已收回主資料夾共用並更新名單':'；名單已更新，主帳下次同步時會收回共用'}else sh='；會在下次「同步到 Drive」時更新名單並收回共用';
+  $('#gdbst').innerHTML='已移除 '+esc(v)+esc(sh)+'<br>'+showAccts()};
 $('#gdauto').checked=ls.get('oc_gd_auto','1')==='1';$('#gdauto').onchange=()=>{ls.set('oc_gd_auto',$('#gdauto').checked?'1':'0')};
 $('#gddest').onchange=()=>{ls.set('oc_gd_dest',$('#gddest').value)};
 /* ===== 以 Google 登入／合併同步／自動清理 ===== */
@@ -1255,8 +1300,16 @@ async function gdSweep(fid){
   for(const f of inF){if(/^img_/.test(f.name)&&!used.has(f.name.slice(4))){await gdf(GAPI+'files/'+f.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});a++}}
   const oa=(await gdLsAll(gdf,'spaces=appDataFolder')).filter(f=>/^img_/.test(f.name)&&(!used.has(f.name.slice(4))||fn.has(f.name)));
   for(const f of oa){await gdf(GAPI+'files/'+f.id,{method:'DELETE'});a++}
+  /* 其他帳號已共用資料夾給目前帳號（可編輯）時，直接用目前帳號清理，不必切換登入；失敗再走原本的切換流程 */
+  const shared={};try{
+    const fq=encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='oc-sync-data' and sharedWithMe and trashed=false");
+    for(const fo of ((await(await gdf(GAPI+'files?q='+fq+'&fields=files(id)')).json()).files||[]))
+      (await gdLsAll(gdf,'q='+encodeURIComponent("'"+fo.id+"' in parents and trashed=false"))).forEach(f=>{shared[f.name]=f.id});
+  }catch(e){}
+  {const l0=LOC();for(const i of Object.keys(l0)){if(used.has(i)||!OTHERS().includes(l0[i]))continue;const id=shared['img_'+i];if(!id)continue;
+    try{await gdf(GAPI+'files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});b++;const l=LOC();delete l[i];sv('oc_gd_loc',l)}catch(e){}}}
   const loc=LOC();
-  for(const em of ACCTS()){
+  for(const em of OTHERS()){
     if(!(GT[em]&&Date.now()<GT[em].exp))continue;
     const ids=Object.keys(loc).filter(i=>loc[i]===em&&!used.has(i));if(!ids.length)continue;
     const f2=await gtFindFolder(em),idm={};
@@ -1291,10 +1344,14 @@ async function gdSync(silent){
   try{
     if(!silent)gdmsg('同步中…');
     ls.set('oc_gd_amail',await mailA());gdFill();
-    const fid=await gdFolder();
-    const {m,mf,mx}=await gdList(fid);
-    const o=await gdUpImgs(fid,mf,mx,silent);
+    const fid=await gdFolder();await reconcileShares(fid);
+    let {m,mf,mx}=await gdList(fid);const ben0=BEN();
+    let changed=false;
+    for(let tr=0;tr<3;tr++){
+    const nid=mf['notes.json'],ver0=nid?await gdVer(nid):'';
     const R=await gdRemote(m,mf);
+    if(R&&R.acc)mergeAccts(R.acc);
+    if(ME()&&MAIN()&&ME()!==MAIN()&&(ADEL()[ME()]||0)>(AMT()[ME()]||0))throw new Error('這個帳號已被從帳號名單移除，無法再同步');
     /* 讀完雲端後立刻合併並寫回本機（中間不等網路，不會蓋掉你剛改的內容） */
     const pa=t=>{try{return JSON.parse(t)||[]}catch(e){return[]}};
     const a=mergeBy(notes(),(R&&R.notes)||[],J('oc_dels',{}),(R&&R.dels)||{});
@@ -1306,10 +1363,15 @@ async function gdSync(silent){
     localStorage.setItem('oc_notes',JSON.stringify(nl));localStorage.setItem('oc_fold',JSON.stringify(b.list));localStorage.setItem('oc_dels',JSON.stringify(b.dels));
     localStorage.setItem('oc_chats',chM);localStorage.setItem('oc_gd_loc',JSON.stringify(locM));
     if(apM.length)localStorage.setItem('oc_apis',JSON.stringify(apM));
-    const out={v:2,notes:nl,folds:b.list,dels:b.dels,chats:slimChats(chM),apis:JSON.stringify(apM),loc:locM};
-    const sig=x=>JSON.stringify([x.notes,x.folds,x.dels,x.chats,x.apis,x.loc]);
-    const changed=!R||R.v!==2||sig(out)!==sig(R);
-    if(changed){out.ts=Date.now();await gdPutF(fid,'notes.json',JSON.stringify(out),mf['notes.json'])}
+    const out={v:2,notes:nl,folds:b.list,dels:b.dels,chats:slimChats(chM),apis:JSON.stringify(apM),loc:locM,acc:accOut()};
+    const sig=x=>JSON.stringify([x.notes,x.folds,x.dels,x.chats,x.apis,x.loc,x.acc]);
+    changed=!R||R.v!==2||sig(out)!==sig(R);
+    if(changed&&nid&&tr<2&&await gdVer(nid)!==ver0)continue;
+    if(changed){out.ts=Date.now();await gdPutF(fid,'notes.json',JSON.stringify(out),nid)}
+    break;
+    }
+    if(!ben0&&BEN())({m,mf,mx}=await gdList(fid));
+    const o=await gdUpImgs(fid,mf,mx,silent);
     const f=await gdFetchImgs(m);
     let sw=null;if(!silent)sw=await gdSweep(fid);
     fillApis();draw('n');draw('e');drawHist();
@@ -1319,16 +1381,18 @@ async function gdSync(silent){
   }catch(e){PG.end('Drive 同步失敗',1);gdmsg('失敗：'+gerr(e),1)}
   finally{SYNCING=false;GDBUSY=false;if(+ls.get('oc_mod','0')>t0&&window.schedDrive)window.schedDrive()}
 }
-$('#shbtn').onclick=async()=>{
-  const em=$('#shmail').value.trim().toLowerCase(),sm=t=>{$('#gdbst').textContent=t};
-  if(!/^\S+@\S+\.\S+$/.test(em)){sm('請輸入正確的 Gmail');return}
-  try{sm('分享中…');const fid=await gdFolder();
-    const p=await(await gdf(GAPI+'files/'+fid+'/permissions?fields=permissions(emailAddress,role)')).json();
-    if((p.permissions||[]).some(x=>(x.emailAddress||'').toLowerCase()===em)){sm('已經分享給 '+em);return}
-    await gdf(GAPI+'files/'+fid+'/permissions?sendNotificationEmail=false',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',role:'writer',emailAddress:em})});
-    sm('已分享給 '+em+'（可編輯）。請用那個帳號登入，再按「同步到 Drive」。');
-  }catch(e){sm('失敗：'+gerr(e))}
-};
+const gdVer=async id=>{const j=await(await gdf(GAPI+'files/'+id+'?fields=version,modifiedTime')).json();return j.version+'|'+j.modifiedTime};
+/* 每次同步都依名單「對帳」主資料夾的共用：名單裡有的補上可編輯；名單裡已移除的收回（只有主帳做） */
+async function reconcileShares(fid){
+  const me=ME(),main=MAIN();let ps;
+  try{ps=((await(await gdf(GAPI+'files/'+fid+'/permissions?fields=permissions(id,emailAddress,role)')).json()).permissions)||[]}catch(e){return}
+  const has=new Map(ps.map(x=>[(x.emailAddress||'').toLowerCase(),x]));
+  for(const e of OTHERS()){if(has.has(e))continue;
+    try{await gdf(GAPI+'files/'+fid+'/permissions?sendNotificationEmail=false',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',role:'writer',emailAddress:e})})}catch(x){}}
+  if(me&&me===main){const D=ADEL(),T=AMT();
+    for(const e of Object.keys(D)){if((D[e]||0)<=(T[e]||0))continue;const x=has.get(e);
+      if(x&&x.role!=='owner'){try{await gdf(GAPI+'files/'+fid+'/permissions/'+x.id,{method:'DELETE'})}catch(y){}}}}
+}
 $('#gdsync').onclick=()=>gdSync();
 /* ===== 底部固定列高度（學習列＋按鈕列），讓內容不被擋住 ===== */
 const lay=()=>{const r=document.documentElement.style;r.setProperty('--nh',$('nav').offsetHeight+'px');r.setProperty('--dh',$('#dock').offsetHeight+'px')};
