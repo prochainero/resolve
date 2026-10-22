@@ -71,6 +71,15 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 .it details[open]{border:1px solid var(--acc);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--bg)}
 #top{display:flex;align-items:center;gap:10px;margin:0 0 10px}#top b{font-size:21px;letter-spacing:.3px}
 #dock textarea{resize:none;max-height:120px;min-height:44px}
+#cmenu{position:fixed;left:8px;bottom:calc(var(--nh,56px) + 8px);z-index:40;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#cmenu.hide{display:none}
+#cmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--fg);font-size:16px;padding:12px 18px;border-radius:6px;cursor:pointer}
+#dbk{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60}#dbk.hide{display:none}
+#drw{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:320px;background:var(--card);z-index:61;transform:translateX(-100%);transition:transform .2s;padding:16px;overflow:auto;box-shadow:4px 0 16px rgba(0,0,0,.25)}
+#drw.open{transform:none}
+#drw .it{border:1px solid var(--bd);margin:0 0 8px;cursor:pointer}
+.plus{flex:none;width:36px;height:36px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-radius:8px;color:var(--mut);font-size:22px;line-height:1;cursor:pointer}
+nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -90,7 +99,7 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
     </div>
     <div class="row"><span class="mut">用途</span><select id="mode" style="flex:1;min-width:0"><option value="q">題目討論（任何科目）</option><option value="o">優惠整理（QR、海報、截圖）</option></select></div>
    </div>
-  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。按住訊息 1 秒選取（可複選），按住 3 秒以上可框選訊息中的部分文字，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、編輯你的訊息後重送、存成筆記、AI製作筆記、檢索筆記本、重整）。要開新聊天請按下方按鈕列右邊的「⋯」。存入時會讓你選資料夾（會記住上次的選擇）。聊天紀錄會存在這台裝置，並隨 Google Drive 同步（圖片不同步）。可用「附件」夾帶圖片、PDF（Gemini／Claude）或文字檔，也可以只送文字。</p>
+  <p class="mut">每拍一張圖就是新的一題，AI 記得前面的討論。按住訊息 1 秒選取（可複選），按住 3 秒以上可框選訊息中的部分文字，再按下方「存筆記」（原文存入）或「AI筆記」（AI 摘要）；每則訊息底下也有單獨的按鈕（複製、引用、編輯你的訊息後重送、存成筆記、AI製作筆記、檢索筆記本、重整）。要開新聊天或切換聊天，請長按最底下的「聊天」1 秒。存入時會讓你選資料夾（會記住上次的選擇）。聊天紀錄會存在這台裝置，並隨 Google Drive 同步（圖片不同步）。可用「附件」夾帶圖片、PDF（Gemini／Claude）或文字檔，也可以只送文字。</p>
   </details>
   <details id="hist"><summary>聊天紀錄（<span id="hcnt">0</span>）</summary><div id="hlist" style="margin-top:8px"></div></details>
  </div>
@@ -102,13 +111,10 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 <section id="p-set" class="hide">
  <h2>設定 <span class="mut">v2026.10.22</span></h2>
  <div id="s-home">
-  <details class="card"><summary>套用 API</summary><p class="mut" style="margin:8px 0 4px">選一個要使用的 API，前面標示服務商。</p><div id="uselist"></div></details>
-  <div class="card"><button class="b" id="gomanage" style="width:100%">管理 API（新增／移除服務商與金鑰）›</button></div>
+  <div class="card"><button class="b" id="glogin" style="width:100%">Google 登入</button><div class="mut" id="gdcur" style="margin-top:8px;word-break:break-all"></div></div>
   <details class="card"><summary>帳號管理</summary>
    <div style="margin-top:10px">
-    <button class="b" id="glogin" style="width:100%">以 Google 登入</button>
-    <div class="mut" id="gdcur" style="margin-top:8px;word-break:break-all"></div>
-    <div class="mut" style="margin:14px 0 4px">多帳號分流：主帳號滿了時，新圖片改存到其他帳號的 Drive 並自動分享給主帳號。</div>
+        <div class="mut" style="margin:14px 0 4px">多帳號分流：主帳號滿了時，新圖片改存到其他帳號的 Drive 並自動分享給主帳號。</div>
     <select id="gddest"><option value="a"></option></select>
     <div class="row" style="margin-top:8px"><button class="b g" id="gdblogin">新增／登入儲存帳號</button><button class="b g" id="gdbclr">移除所選儲存帳號</button></div>
     <div class="mut" id="gdbst" style="margin-top:8px"></div>
@@ -129,11 +135,12 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
    <div style="margin-top:10px">
     <select id="exk"><option value="n">筆記本（普通筆記）</option><option value="e">AI 摘要</option></select>
     <div class="row" style="margin:8px 0"><button class="b g sm" id="exall">全選</button><button class="b g sm" id="exclr">取消全選</button><span class="mut" id="excnt"></span></div>
-    <div id="exlist" style="max-height:50vh;overflow:auto"></div>
+    <div id="exlist" style="max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px"></div>
     <button class="b" id="exgo" style="margin-top:10px">匯出選取的筆記</button>
    </div>
   </details>
   <div class="card"><p class="mut" style="margin:0">圖片與對話會送到你目前選用的服務商處理；免費層的內容可能被用於改進產品，請不要上傳不想外流的資料。資料存在這台裝置的瀏覽器，請用 Google Drive 同步或定期匯出。</p></div>
+  <details class="card"><summary style="color:var(--mut);font-weight:400">API 設定</summary><p class="mut" style="margin:8px 0 4px">選一個要使用的 API，前面標示服務商。</p><div id="uselist"></div><button class="b g sm" id="gomanage" style="margin-top:8px">管理 API（新增／移除）›</button></details>
  </div>
  <div id="s-manage" class="hide">
   <button class="b g" id="mback" style="margin-bottom:12px">‹ 返回設定</button>
@@ -151,18 +158,13 @@ details summary{cursor:pointer;color:var(--acc);font-weight:600}
 </main>
 <div id="mdl" class="hide"><div class="mbox" id="mbox"></div></div>
 <div id="dock"><div class="dk">
- <div class="row hide" id="selbar" style="margin:0 0 8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button><button class="b g sm" id="snipclr">清除框選</button><button class="b g sm" id="selfind">🔍 檢索筆記本</button></div>
+ <div class="row hide" id="selbar" style="margin:0 0 8px"><span id="selcnt" class="mut"></span><button class="b g sm" id="selall">全選</button><button class="b g sm" id="selclr">取消選取</button><button class="b g sm" id="snipclr">清除框選</button><button class="b g sm" id="selfind">🔍 檢索筆記本</button><button class="b g sm" id="sum">存筆記</button><button class="b g sm" id="aib">AI筆記</button></div>
  <div id="qbox" class="hide"><div class="qtx" id="qtx"></div><button id="qx" aria-label="取消引用">✕</button></div>
  <div id="attbox" class="row hide" style="margin:0 0 6px"></div>
- <div class="row" style="flex-wrap:nowrap;margin:0 0 8px;align-items:flex-end"><textarea id="q" rows="1" placeholder="輸入訊息…（電腦可按 Ctrl+Enter 送出）"></textarea><button class="b" id="send" style="flex:none">送出</button></div>
- <div class="row bar">
-  <label class="b g">附件<input id="attf" type="file" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.html,.xml,.log,.js,.py,.css,.ts,.yml,.yaml,text/*" hidden></label>
-  <label class="b g">拍照<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
-  <button class="b g" id="sum">存筆記</button>
-  <button class="b g" id="aib">AI筆記</button>
-  <div class="mw"><button class="b g" id="more" aria-label="更多">⋯</button><div id="menu" class="hide"><button id="find">🔍 檢索筆記本</button><button id="reset">＋ 新聊天</button></div></div>
- </div>
+ <div class="row" style="flex-wrap:nowrap;margin:0;align-items:flex-end;gap:6px"><label class="plus" aria-label="上傳附件">+<input id="attf" type="file" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.html,.xml,.log,.js,.py,.css,.ts,.yml,.yaml,text/*" hidden></label><textarea id="q" rows="1" placeholder="輸入訊息…"></textarea><button class="b" id="send" style="flex:none">📷 拍照</button><input id="cam" type="file" accept="image/*" capture="environment" hidden></div>
 </div></div>
+<div id="cmenu" class="hide"><button id="reset">＋ 新聊天</button><button id="swc">💬 切換聊天</button></div>
+<div id="dbk" class="hide"></div><aside id="drw"></aside>
 <div id="pg" class="hide" role="status" aria-live="polite"><div class="t"><span id="pgl"></span><b id="pgr"></b></div><div class="tr"><div id="pgf" class="fl"></div></div></div>
 <nav><button data-t="learn" class="on">聊天</button><button data-t="n">筆記本</button><button data-t="e">AI 摘要</button><button data-t="set">設定</button></nav>
 
@@ -416,22 +418,23 @@ async function pick(f){
   S.hist.push({role:'user',...(hasO?{oid}:{}),parts:[{inline_data:{mime_type:'image/jpeg',data:url.split(',')[1]}},{text:tt0||(o?'請整理這張圖裡的優惠。':'請解析這張圖。')}]});
   render();saveChat();ask();
 }
-['cam'].forEach(id=>$('#'+id).onchange=e=>{pick(e.target.files[0]);e.target.value=''});
+$('#cam').onchange=e=>{const fs=[...e.target.files];e.target.value='';stage(fs)};
 $('#mode').onchange=()=>{S.mode=$('#mode').value;cfgSum()};
-$('#more').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('hide')};
-document.addEventListener('click',e=>{if(!e.target.closest('.mw'))$('#menu').classList.add('hide')});
-$('#reset').onclick=()=>{clearQuote();$('#menu').classList.add('hide');if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();S.snip='';$('#status').textContent='';render();drawHist()};
+let CMT=0,LPN=false;
+document.addEventListener('click',e=>{if(!e.target.closest('#cmenu')&&Date.now()-CMT>500)$('#cmenu').classList.add('hide')});
+$('#reset').onclick=()=>{document.querySelector('nav button[data-t="learn"]').click();clearQuote();S.att=[];drawAtt();$('#cmenu').classList.add('hide');if(S.ctl)S.ctl.abort('user');S.hist=[];S.cid=null;S.thumb=null;S.start=0;S.pend=null;S.sel.clear();S.snip='';$('#status').textContent='';render();drawHist()};
 const autoH=()=>{const q=$('#q');q.style.height='auto';q.style.height=Math.min(q.scrollHeight,120)+'px'};
-$('#q').addEventListener('input',autoH);
+const updSend=()=>{$('#send').textContent=($('#q').value.trim()||S.att.length)?'送出':'📷 拍照'};
+$('#q').addEventListener('input',()=>{autoH();updSend()});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#send').click()}});
-function drawAtt(){const b=$('#attbox');b.classList.toggle('hide',!S.att.length);b.innerHTML=S.att.map((a,i)=>'<span class="tag" style="margin:0;border-color:var(--acc);color:var(--fg)">'+(a.kind==='img'?'🖼 ':'📎 ')+esc(a.name.slice(0,18))+' <b data-ax="'+i+'" style="cursor:pointer;padding:0 4px">✕</b></span>').join('')}
+function drawAtt(){const b=$('#attbox');b.classList.toggle('hide',!S.att.length);b.innerHTML=S.att.map((a,i)=>'<span class="tag" style="margin:0;border-color:var(--acc);color:var(--fg)">'+(a.kind==='img'?'🖼 ':'📎 ')+esc(a.name.slice(0,18))+' <b data-ax="'+i+'" style="cursor:pointer;padding:0 4px">✕</b></span>').join('');updSend()}
 $('#attbox').onclick=e=>{const i=e.target.dataset.ax;if(i===undefined)return;S.att.splice(+i,1);drawAtt()};
-$('#attf').onchange=async e=>{
-  const fs=[...e.target.files];e.target.value='';
+async function stage(fs){
   for(const f of fs){
+    if(!f)continue;
     if(f.size>8e6){alert('「'+f.name+'」超過 8MB，無法夾帶');continue}
     try{
-      if(f.type.startsWith('image/')){const u=await shrink(f,1100,.75);S.att.push({kind:'img',name:f.name,f,part:{inline_data:{mime_type:'image/jpeg',data:u.split(',')[1]}}})}
+      if(f.type.startsWith('image/')){const u=await shrink(f,1100,.75);S.att.push({kind:'img',name:f.name||'照片',f,part:{inline_data:{mime_type:'image/jpeg',data:u.split(',')[1]}}})}
       else if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
         const c=cur();if(!c||!['gemini','claude'].includes(c.p)){alert('目前使用的服務商不支援直接讀 PDF（僅 Gemini、Claude）');continue}
         S.att.push({kind:'pdf',name:f.name,part:{inline_data:{mime_type:'application/pdf',data:await blobB64(f)}}})}
@@ -440,9 +443,12 @@ $('#attf').onchange=async e=>{
     }catch(x){alert('「'+f.name+'」讀取失敗')}
   }
   drawAtt();
-};
+}
+$('#attf').onchange=e=>{const fs=[...e.target.files];e.target.value='';stage(fs)};
 $('#send').onclick=async()=>{
-  const t=$('#q').value.trim();if(S.busy||S.sending||(!t&&!S.att.length))return;
+  const t=$('#q').value.trim();
+  if(!t&&!S.att.length){if(!S.busy)$('#cam').click();return}
+  if(S.busy||S.sending)return;
   S.sending=true;
   try{
     const qt=S.qt?S.qt.split('\n').map(l=>'> '+l).join('\n')+'\n\n':'';
@@ -451,11 +457,12 @@ $('#send').onclick=async()=>{
     at.forEach(a=>{if(a.part)m.parts.push(a.part)});
     const im=at.find(a=>a.kind==='img');
     if(im){S.start=S.hist.length;S.pend=null;S.thumb=await shrink(im.f,S.mode==='o'?520:160,S.mode==='o'?.6:.7);const oid=uid();if(await imgPut(oid,await shrink(im.f,2400,.88)))m.oid=oid}
-    m.parts.push({text:tx||'請解析這份附件。'});
+    m.parts.push({text:tx||(im?(S.mode==='o'?'請整理這張圖裡的優惠。':'請解析這張圖。'):'請解析這份附件。')});
     clearQuote();$('#q').value='';autoH();S.att=[];drawAtt();
     S.hist.push(m);render();saveChat();ask();
   }finally{S.sending=false}
 };
+updSend();
 
 /* ===== 聊天紀錄（只存在這台裝置，不同步） ===== */
 const chats=()=>J('oc_chats',[]);
@@ -481,7 +488,7 @@ function drawHist(){
 }
 function loadChat(id,quiet){
   const c=chats().find(x=>x.id===id);if(!c)return;
-  if(S.busy){$('#status').textContent='AI 回應中，請稍候，或先按「⋯ → 新聊天」中止。';return}
+  if(S.busy){$('#status').textContent='AI 回應中，請稍候，或先長按下方「聊天」選「新聊天」中止。';return}
   S.cid=c.id;S.hist=c.hist;S.start=c.start||0;S.thumb=c.thumb||null;S.mode=c.mode||'q';$('#mode').value=S.mode;S.pend=null;S.sel.clear();$('#status').textContent='';
   cfgSum();render(quiet);drawHist();
 }
@@ -660,9 +667,9 @@ $('#mdl').onclick=async e=>{
   if(id==='rclr'){document.querySelectorAll('#mbox .rit').forEach(c=>c.classList.remove('sel'));rbarUpd();return}
   if(id==='mai'){aiTK($('#mt'),$('#mk'),$('#mb'),e.target);return}
   if(id==='fsum'&&FD){
-    const pk=[...document.querySelectorAll('#mbox .rit.sel')].map(c=>FD.hits[+c.dataset.r]);
-    if(!pk.length){alert('請先長按選取要整併的筆記');return}
-    closeMdl();aiNote(FD.ix,pk,S.snip);return;
+    const pk=[...document.querySelectorAll('#mbox .rit.sel[data-r]')].map(c=>FD.hits[+c.dataset.r]),sx=[...document.querySelectorAll('#mbox .rit.sel[data-s]')].map(c=>+c.dataset.s);
+    if(!pk.length&&!sx.length){alert('請先長按選取要整併的筆記或原訊息');return}
+    closeMdl();aiNote(sx.length?sx:FD.ix,pk,S.snip);return;
   }
   if(id==='zt'){const im=$('#zimg'),big=im.style.width!=='250%';im.style.width=big?'250%':'100%';$('#zt').textContent=big?'縮小':'放大';return}
   if(id==='msv'&&MD){
@@ -846,22 +853,25 @@ async function findFlow(ix0){
   try{
     const all=notes().filter(x=>x.k==='n');
     if(!all.length){busy(false,'筆記本裡還沒有筆記。');return}
-    const byKw=all.filter(x=>(x.kws||[]).some(w=>kws.includes(w)));
-    const cand=[...new Set([...byKw,...related(kws.join(' ')+' '+q,'n',30)])].slice(0,40),pool=cand.length?cand:all.slice(0,40);
+    const ks=kws.map(w=>tex(w).toLowerCase());
+    const sc=x=>{const nk=(x.kws||[]).map(w=>tex(w).toLowerCase()),t=tex(x.title).toLowerCase(),b=tex(x.body).toLowerCase();let v=0;ks.forEach(w=>{if(nk.some(u=>u===w))v+=5;else if(w.length>=2&&nk.some(u=>u.length>=2&&(u.includes(w)||w.includes(u))))v+=3;if(w.length>=2&&t.includes(w))v+=3;else if(w.length>=2&&b.includes(w))v+=1});return v};
+    let cand=ks.length?all.map(x=>({x,v:sc(x)})).filter(r=>r.v>=3).sort((a,b)=>b.v-a.v).map(r=>r.x):related(q,'n',20);
+    cand=cand.slice(0,30);const pool=cand;
+    if(!cand.length){busy(false,'');FD={q,ix,hits:[],why:{},kws};showFind();return}
     let hits=[],why={};
     try{
       const idx=pool.map(x=>x.id+'｜'+tex(x.title)+'｜'+(x.kws||[]).join('/')+'｜'+tex(x.body).replace(/\s+/g,' ').slice(0,60)).join('\n');
-      const o=jparse(await call([{role:'user',parts:[{text:'以下是 AI 回應訊息的關鍵字與內容，以及我的筆記索引（id｜標題｜關鍵字｜開頭）。請優先用關鍵字比對，找出主題相關、值得一起複習或合併的筆記，最多 8 則，依相關度排序。沒有相關就回傳空陣列。只輸出 JSON：{"hits":[{"id":"…","why":"一句話原因"}]}\n\n【關鍵字】\n'+(kws.map(w=>'#'+w).join(' ')||'（無，請依內容判斷）')+'\n\n【內容】\n'+q+'\n\n【筆記索引】\n'+idx}]}],SYS2,true));
+      const o=jparse(await call([{role:'user',parts:[{text:'以下是 AI 回應訊息的關鍵字與內容，以及我的筆記索引（id｜標題｜關鍵字｜開頭）。請優先用關鍵字比對，找出主題「實質相關」、值得一起複習或合併的筆記，最多 8 則，依相關度排序。寧缺勿濫：只是用詞巧合、領域不同的筆記一律不要列出；沒有相關就回傳空陣列。只輸出 JSON：{"hits":[{"id":"…","why":"一句話原因"}]}\n\n【關鍵字】\n'+(kws.map(w=>'#'+w).join(' ')||'（無，請依內容判斷）')+'\n\n【內容】\n'+q+'\n\n【筆記索引】\n'+idx}]}],SYS2,true));
       (o.hits||[]).forEach(h=>{const x=pool.find(p=>p.id===h.id);if(x&&!hits.includes(x)){hits.push(x);why[x.id]=h.why||''}});
-    }catch(e){hits=cand.slice(0,8)}
+    }catch(e){hits=ks.length?cand.slice(0,5):[]}
     busy(false,'');FD={q,ix,hits,why,kws};showFind();
   }catch(e){busy(false,errH(e))}
 }
 function rbarUpd(){const b=$('#rbar');if(!b)return;const n=document.querySelectorAll('#mbox .rit.sel').length,t=document.querySelectorAll('#mbox .rit').length;b.classList.toggle('hide',!n);$('#rcnt').textContent='已選 '+n+'／'+t}
 function showFind(){
   const {ix,hits,why,q}=FD,fn=id=>(folds().find(f=>f.id===id)||{name:'?'}).name;
-  const src=ix.length?ix.map(i=>'<div style="white-space:pre-wrap;margin:4px 0">'+esc(tex(txt(S.hist[i])))+'</div>'+mk(S.hist[i])).join('<hr style="border:0;border-top:1px solid var(--bd)">'):'<div style="white-space:pre-wrap">'+esc(tex(q))+'</div>';
-  openMdl('<div class="card" style="position:sticky;top:-16px;z-index:2;max-height:30vh;overflow:auto;margin:0 0 10px"><b>原本的回應訊息</b>'+src+'</div><h3>相關筆記（'+hits.length+'）</h3><p class="mut" style="margin:0 0 8px">'+(hits.length?'長按筆記 1 秒可選取（選取後點一下可加選／取消）；選取後可全選、取消全選，或「AI 整併摘要」。點「查看內容」可展開閱讀，上方原訊息會一直留在畫面上。':'筆記本裡沒有找到相關筆記。')+'</p>'+hits.map((x,i)=>'<div class="it selitem rit" data-r="'+i+'"><b class="tt">'+esc(tex(x.title))+'</b> <span class="tag">📁 '+esc(fn(x.fid))+'</span><br>'+(why[x.id]?'<span class="mut">'+esc(why[x.id])+'</span><br>':'')+kt(x.kws)+'<details><summary>查看內容</summary><div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(x.body))+'</div></details></div>').join('')+'<div id="rbar" class="hide" style="position:sticky;bottom:-16px;background:var(--card);border-top:1px solid var(--bd);padding:8px 0;margin-top:8px"><div class="row"><span class="mut" id="rcnt"></span><button class="b g sm" id="rall">全選</button><button class="b g sm" id="rclr">取消全選</button><button class="b sm" id="fsum">AI 整併摘要</button></div></div><div class="row" style="margin-top:8px"><button class="b g" id="mcx">關閉</button></div>');
+  const src=ix.length?ix.map(i=>'<div class="it selitem rit" data-s="'+i+'"><b class="tt">'+(S.hist[i].role==='model'?'AI 回應':'我的訊息')+'</b><div style="white-space:pre-wrap;margin:4px 0">'+esc(tex(txt(S.hist[i])))+'</div>'+mk(S.hist[i])+'</div>').join(''):'<div style="white-space:pre-wrap">'+esc(tex(q))+'</div>';
+  openMdl('<div class="card" style="position:sticky;top:-16px;z-index:2;max-height:30vh;overflow:auto;margin:0 0 10px"><b>原本的回應訊息</b>'+src+'</div><h3>相關筆記（'+hits.length+'）</h3><p class="mut" style="margin:0 0 8px">'+(hits.length?'長按筆記或上方原訊息 1 秒可選取（選取後點一下可加選／取消）；選取後可全選、取消全選，或「AI 整併摘要」。點「查看內容」可展開閱讀，上方原訊息會一直留在畫面上。':'筆記本裡沒有找到相關筆記。')+'</p>'+hits.map((x,i)=>'<div class="it selitem rit" data-r="'+i+'"><b class="tt">'+esc(tex(x.title))+'</b> <span class="tag">📁 '+esc(fn(x.fid))+'</span><br>'+(why[x.id]?'<span class="mut">'+esc(why[x.id])+'</span><br>':'')+kt(x.kws)+'<details><summary>查看內容</summary><div style="white-space:pre-wrap;margin:8px 0">'+esc(tex(x.body))+'</div></details></div>').join('')+'<div id="rbar" class="hide" style="position:sticky;bottom:-16px;background:var(--card);border-top:1px solid var(--bd);padding:8px 0;margin-top:8px"><div class="row"><span class="mut" id="rcnt"></span><button class="b g sm" id="rall">全選</button><button class="b g sm" id="rclr">取消全選</button><button class="b sm" id="fsum">AI 整併摘要</button></div></div><div class="row" style="margin-top:8px"><button class="b g" id="mcx">關閉</button></div>');
 }
 {const mb=$('#mbox');let T=null,F=false,X=0,Y=0;
  const skip=e=>e.target.closest('button,input,select,textarea,label,a')||(e.target.closest('details')&&!e.target.closest('summary'));
@@ -871,7 +881,6 @@ function showFind(){
  mb.addEventListener('contextmenu',e=>{if(e.target.closest('.rit')&&!skip(e))e.preventDefault()});
  mb.addEventListener('click',e=>{if(F){F=false;e.preventDefault();e.stopPropagation();return}const it=e.target.closest('.rit');if(it&&!skip(e)&&mb.querySelector('.rit.sel')){e.preventDefault();e.stopPropagation();it.classList.toggle('sel');rbarUpd()}},true)}
 $('#selfind').onclick=()=>findFlow();
-$('#find').onclick=()=>{$('#menu').classList.add('hide');findFlow()};
 async function aiTK(tEl,kEl,bEl,btn){
   const body=bEl.value.trim();if(!body)return;
   const ov=[tEl.value,kEl.value],op=[tEl.placeholder,kEl.placeholder];
@@ -922,21 +931,21 @@ function ankiOut(ids){
   const el=document.createElement('a');el.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));el.download=name;document.body.appendChild(el);el.click();el.remove();
   setTimeout(()=>URL.revokeObjectURL(el.href),5000);
 }
-function exCnt(){$('#excnt').textContent='已選 '+document.querySelectorAll('#exlist input:checked').length+' 則'}
+function exCnt(){$('#excnt').textContent='已選 '+document.querySelectorAll('#exlist input[value]:checked').length+' 則'}
 function exFill(){
   const k=$('#exk').value,F=folds().filter(f=>f.k===k),N=notes().filter(n=>n.k===k&&(n.body||!n.file));
-  const keep=new Set([...document.querySelectorAll('#exlist input:checked')].map(c=>c.value));
+  const keep=new Set([...document.querySelectorAll('#exlist input[value]:checked')].map(c=>c.value));
   const grp=F.map(f=>({n:f.name,a:N.filter(n=>n.fid===f.id)}));
   grp.push({n:'未分類',a:N.filter(n=>!F.some(f=>f.id===n.fid))});
-  $('#exlist').innerHTML=N.length?grp.filter(g=>g.a.length).map(g=>'<div class="mut" style="margin:8px 0 2px">📁 '+esc(g.n)+'（'+g.a.length+'）</div>'+g.a.map(n=>'<label style="display:flex;gap:10px;align-items:center;margin:4px 0"><input type="checkbox" value="'+n.id+'" style="width:22px;flex:none"'+(keep.has(n.id)?' checked':'')+'><span>'+esc(tex(n.title))+'</span></label>').join('')).join(''):'<p class="mut">這裡還沒有可匯出的筆記。</p>';
+  $('#exlist').innerHTML=N.length?grp.filter(g=>g.a.length).map(g=>'<details style="margin:2px 0"><summary style="display:flex;gap:8px;align-items:center;list-style:none"><input type="checkbox" data-fg="1" style="width:22px;flex:none"><span>📁 '+esc(g.n)+' <span class="mut">（'+g.a.length+'）</span></span></summary><div style="margin-left:6px">'+g.a.map(n=>'<label style="display:flex;gap:10px;align-items:center;margin:4px 0"><input type="checkbox" value="'+n.id+'" style="width:22px;flex:none"'+(keep.has(n.id)?' checked':'')+'><span>'+esc(tex(n.title))+'</span></label>').join('')+'</div></details>').join(''):'<p class="mut">這裡還沒有可匯出的筆記。</p>';
   exCnt();
 }
 $('#exk').onchange=()=>{$('#exlist').innerHTML='';exFill()};
 $('#exd').addEventListener('toggle',exFill);
-$('#exlist').onchange=exCnt;
+$('#exlist').onchange=e=>{const t=e.target;if(t.dataset.fg!==undefined)t.closest('details').querySelectorAll('input[value]').forEach(c=>c.checked=t.checked);exCnt()};
 $('#exall').onclick=()=>{document.querySelectorAll('#exlist input').forEach(c=>c.checked=true);exCnt()};
 $('#exclr').onclick=()=>{document.querySelectorAll('#exlist input').forEach(c=>c.checked=false);exCnt()};
-$('#exgo').onclick=()=>ankiOut([...document.querySelectorAll('#exlist input:checked')].map(c=>c.value));
+$('#exgo').onclick=()=>ankiOut([...document.querySelectorAll('#exlist input[value]:checked')].map(c=>c.value));
 /* ===== API 套用／管理 ===== */
 function cfgSum(){const c=cur();$('#cfgsum').textContent=(c?label(c)+' / '+(c.model||'未設定'):'尚未設定')+' / '+($('#mode').value==='o'?'優惠整理':'題目討論')}
 function fillApis(){
@@ -1272,12 +1281,28 @@ const lay=()=>{const r=document.documentElement.style;r.setProperty('--nh',$('na
 if(window.ResizeObserver){const ro=new ResizeObserver(lay);ro.observe($('nav'));ro.observe($('#dock'))}
 window.addEventListener('resize',lay);lay();
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  if(b.dataset.t==='learn'&&LPN){LPN=false;return}
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['learn','n','e','set'].forEach(t=>$('#p-'+t).classList.toggle('hide',t!==b.dataset.t));
   $('#dock').classList.toggle('hide',b.dataset.t!=='learn');lay();
   if(b.dataset.t==='n'||b.dataset.t==='e')draw(b.dataset.t);
   if(b.dataset.t==='set'){goHome();exFill()}
 });
+/* ===== 長按「聊天」：新聊天／切換聊天（左側抽屜，近 3 則） ===== */
+{const nb=document.querySelector('nav button[data-t="learn"]');let T=null,X=0,Y=0;
+ nb.addEventListener('pointerdown',e=>{X=e.clientX;Y=e.clientY;clearTimeout(T);T=setTimeout(()=>{LPN=true;CMT=Date.now();$('#cmenu').classList.remove('hide');vib(30)},1000)});
+ ['pointerup','pointercancel','pointerleave'].forEach(t=>nb.addEventListener(t,()=>{clearTimeout(T);if(LPN)setTimeout(()=>{LPN=false},400)}));
+ nb.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-X)>10||Math.abs(e.clientY-Y)>10)clearTimeout(T)});
+ nb.addEventListener('contextmenu',e=>e.preventDefault())}
+function closeDrw(){$('#drw').classList.remove('open');$('#dbk').classList.add('hide')}
+function openDrw(){
+  const a=chats().slice(0,3);
+  $('#drw').innerHTML='<h3>最近的聊天</h3>'+(a.length?a.map(c=>'<div class="it" data-ci="'+c.id+'"><b class="tt">'+(c.id===S.cid?'✓ ':'')+esc(c.title)+'</b><br><span class="mut">'+esc(new Date(c.ts).toLocaleString('zh-TW'))+'・'+c.hist.length+' 則</span></div>').join(''):'<p class="mut">還沒有聊天紀錄。</p>')+'<p class="mut">更早的紀錄在聊天頁「AI 設定」下方的「聊天紀錄」。</p>';
+  $('#dbk').classList.remove('hide');requestAnimationFrame(()=>$('#drw').classList.add('open'));
+}
+$('#swc').onclick=()=>{$('#cmenu').classList.add('hide');document.querySelector('nav button[data-t="learn"]').click();openDrw()};
+$('#dbk').onclick=closeDrw;
+$('#drw').onclick=e=>{const t=e.target.closest('[data-ci]');if(!t)return;closeDrw();loadChat(t.dataset.ci);if(!S.busy)window.scrollTo(0,document.body.scrollHeight)};
 </script>
 </body>
 </html>
